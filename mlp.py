@@ -47,6 +47,7 @@ class NeRF(nn.Module):
                 h = torch.cat([posi_encode, h], -1)
         
         density = self.density_linear(h)
+        ## density = F.relu(density)
         h = self.feature_linear(h)
         h = torch.cat([h, dir_encode], -1)
         h = self.view_linear(h)
