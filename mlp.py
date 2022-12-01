@@ -28,9 +28,9 @@ class NeRF(nn.Module):
         self.hidden_layers = nn.ModuleList([nn.Linear(posi_len, W)])
         for i in range(D-1):
             if i in self.skips:
-                self.hidden_layers.append([nn.Linear(W + posi_len, W)])
+                self.hidden_layers.append(nn.Linear(W + posi_len, W))
             else:
-                self.hidden_layers.append([nn.Linear(W, W)])
+                self.hidden_layers.append(nn.Linear(W, W))
         
         self.density_linear = nn.Linear(W, 1)
         self.feature_linear = nn.Linear(W, W)
