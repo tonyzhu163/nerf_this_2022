@@ -71,6 +71,13 @@ def batchify(fn, chunk):
     return ret
 
 def run_network(inputs, viewdirs, fn, embed_fn_pos, embed_fn_dir, netchunk=1024*64):
+    '''
+    inputs: positions of points, direction: x * y * 3
+    (x: number of rays. y: number of points per ray.)
+    viewdirs: directions of points, direction: x * y
+    (all points on the same ray are of the same direction)
+    outputs: x * y * 4 (4: 3 rgb + 1 density)
+    '''
     inputs_flat = torch.reshape(inputs, [-1, inputs.shape[-1]])
     embedded_pos = embed_fn_pos(inputs_flat)
 
