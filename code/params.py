@@ -6,7 +6,7 @@ class ModelParameters:
 
     # expname:
     # basedir: './logs/'
-    datadir: str = 'data/nerf_synthetic'
+    datadir: str = 'data' / 'nerf_synthetic'
     netdepth: int = 8
     netwidth: int = 256
     netdepth_fine: int = 8
@@ -19,6 +19,8 @@ class ModelParameters:
     use_batching: bool = True
     # no_reload:
     # ft_path:
+    
+    # ----------------------------- rendering options ---------------------------- #
     N_samples: int = 64
     N_importance: int = 0
     perturb: int = 1.
@@ -27,8 +29,8 @@ class ModelParameters:
     multires: int = 10
     multires_views: int = 4
     raw_noise_std: float = 0.
-    # render_only:
-    # render_test:
+    render_only: bool = True
+    render_test: bool = True
     # render_factor:
     # precrop_iters:
     # precrop_frac:
