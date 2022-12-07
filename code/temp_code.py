@@ -2,6 +2,11 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
+from .rays import generate_rays
+
+def get_rays(H, W, focal, pose):
+    generate_rays(H, W, focal, pose)
+
 
 # MUST REFACTOR ALL CODE IN HERE
 
@@ -32,11 +37,30 @@ import numpy as np
 
 
 # CHUNK = # OF RAYS PER BATCH, MAXIMUM MEMORY USAGE
-def render(H, W, K, chunk=1024*32, rays=None, c2w=None, ndc=True,
+# changed ndc to False because we are not using LLFF data
+# viewdirs will always be True from Model
+
+def render(H, W, K, chunk=1024*32, rays=None, c2w=None, ndc=False,
                   near=0., far=1.,
                   use_viewdirs=False, c2w_staticcam=None,
                   **kwargs):
-    rays_o, rays_d = rays
+    if c2w is not None:
+        # special case to render full image
+        rays_o, rays_d = get_rays(H, W, K, c2w)
+    else:
+        # use provided ray batch
+        rays_o, rays_d = rays
+
+    # DONT NEED THIS BECAUSE WE ALREADY NORMALIZE
+    if use_viewdirs:
+        viewdirs = rays_d
+    #     # provide ray directions as input
+
+    #     if c2w_staticcam is not None:
+    #         # special case to visualize effect of viewdirs
+    #         rays_o, rays_d = get_rays(H, W, K, c2w_staticcam)
+    #     viewdirs = viewdirs / torch.norm(viewdirs, dim=-1, keepdim=True)
+    #     viewdirs = torch.reshape(viewdirs, [-1, 3]).float()
 
     sh = rays_d.shape
 
@@ -45,6 +69,10 @@ def render(H, W, K, chunk=1024*32, rays=None, c2w=None, ndc=True,
 
     near, far = near * torch.ones_like(rays_d[..., :1]), far * torch.ones_like(rays_d[..., :1])
     rays = torch.cat([rays_o, rays_d, near, far], -1)
+
+    # this ensures that directional data is being included
+    if use_viewdirs:
+        rays = torch.cat([rays, viewdirs], -1)
 
     all_ret = batchify_rays(rays, chunk, **kwargs)
     for k in all_ret:
@@ -131,6 +159,8 @@ def render_rays(ray_batch,
                 pytest=False):
     N_rays = ray_batch.shape[0]
     rays_o, rays_d = ray_batch[:, 0:3], ray_batch[:, 3:6]  # [N_rays, 3] each
+
+    # what is this?
     viewdirs = ray_batch[:, -3:] if ray_batch.shape[-1] > 8 else None
     bounds = torch.reshape(ray_batch[..., 6:8], [-1, 1, 2])
     near, far = bounds[..., 0], bounds[..., 1]  # [-1,1]
