@@ -12,8 +12,8 @@ def main():
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    data_dir = Path.cwd().parent / 'data' / 'nerf_synthetic'
-    images, poses, render_poses, hwf, i_split = load_blender_data(data_dir)
+    data_dir = Path.cwd().parent / params.datadir
+    images, poses, render_poses, hwf, K, i_split = load_blender_data(data_dir)
     print('Loaded blender', images.shape, render_poses.shape, hwf, data_dir)
     i_train, i_val, i_test = i_split
 
