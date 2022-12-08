@@ -44,7 +44,9 @@ class ModelParameters:
     multires: int = 10
     multires_views: int = 4
     raw_noise_std: float = 0.0
-    render_only: bool = True
+    #* do not optimize, reload weights and render out render_poses path
+    render_only: bool = False
+    #* render the test set instead of render_poses path
     render_test: bool = True
     # render_factor:
     # precrop_iters:

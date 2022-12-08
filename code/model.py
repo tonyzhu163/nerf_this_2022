@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .encoders import get_embedder
+from encoders import get_embedder
 
 ## We always assume that our model uses 5d inputs, so we will not use
 ## the "use_viewdir" argument as in the codes we reference.
@@ -132,8 +132,11 @@ def create_nerf(args, device):
 
     
     start = 0
-    basedir = args.basedir
-    expname = args.expname
+    
+    #TEMP: add these back when implemented properly (also add to params)
+    # basedir = args.basedir
+    # expname = args.expname
+    
     '''
     ##########################
 
