@@ -32,7 +32,24 @@ def render(H, W, K, max_rays, rays, pose=None, **kwargs):
     if pose is not None:
         generate_rays(H, W, K, pose)
     else:
-        ray_d, ray_o = rays
+        rays_d, rays_o = rays
+
+    viewdirs = rays_d
+    sh = rays_d.shape
+    rays_o = rays_o.float()
+    rays_d = rays_d.float()
+
+    # near and far from ** kwargs?
+    near, far = near * torch.ones_like(rays_d[..., :1]), far * torch.ones_like(rays_d[..., :1])
+
+    # [H*W, 3 + 3 + 1 + 1]
+    rays = torch.cat([rays_o, rays_d, near, far], -1)
+
+    # [H*W, 11]
+    rays = torch.cat([rays, viewdirs], -1)
+
+
+
 
     # batchify_ray -> render_ray -> h_sampling
 
