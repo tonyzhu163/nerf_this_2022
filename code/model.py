@@ -64,17 +64,19 @@ class NeRF(nn.Module):
 def batchify(fn, chunk):
     """Constructs a version of 'fn' that applies to smaller batches.
     """
-    if chunk is None:
+    if chunk != None:
+        def ret(inputs):
+            return torch.cat([fn(inputs[i:i+chunk]) for i in range(0, inputs.shape[0], chunk)], 0)
+        return ret
+    else:
         return fn
-    def ret(inputs):
-        return torch.cat([fn(inputs[i:i+chunk]) for i in range(0, inputs.shape[0], chunk)], 0)
-    return ret
+
 
 def run_network(inputs, viewdirs, fn, embed_fn_pos, embed_fn_dir, netchunk=1024*64):
     '''
-    inputs: positions of points, direction: x * y * 3
+    inputs: positions of points, dimension: x * y * 3
     (x: number of rays. y: number of points per ray.)
-    viewdirs: directions of points, direction: x * y
+    viewdirs: directions of points, dimension: x * y
     (all points on the same ray are of the same direction)
     outputs: x * y * 4 (4: 3 rgb + 1 density)
     '''
