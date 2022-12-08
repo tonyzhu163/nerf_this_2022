@@ -24,8 +24,8 @@ class ModelParameters:
     N_rand: int = 32 * 32 * 4
     lrate: float = 5e-4
     lrate_decay: int = 250
-    chunk: int = 1024 * 32  # This should be max_ray
-    netchunk: int = 1024 * 64  # This should be max_points
+    chunk: int = 1024 * 8  # This should be max_ray, updated, original amount will crash gpu memory
+    netchunk: int = 1024 * 16  # This should be max_points
     use_batching: bool = False
     # no_reload:
     # ft_path:

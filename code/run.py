@@ -54,12 +54,12 @@ def main():
         return
     
     # TODO: implement batching in some other python file
-    batch_rays, target_s = None, None
+    batch_rays, target_s = [None, None], None
     pose = None
     for epoch in trange(start + 1, params.epochs + 1):
         #TODO: need to modify this so the render function matches
         #* near and far are already in the render_kwargs apparently
-        rgb, disp, acc, extras = render(H, W, K, params.chunk, batch_rays, pose, **render_kwargs_train)
+        rgb, disp, acc, extras = render(H, W, K, params.chunk, batch_rays, **render_kwargs_train)
         optimizer.zero_grad()
         
         loss = torch.mean((rgb - target_s)**2) #* mean squared error as tensor
