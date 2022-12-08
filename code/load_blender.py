@@ -97,4 +97,4 @@ def load_blender_data(basedir, half_res=False, testskip=1):
             [0, 0, 1]
         ])
     near, far = 2., 6.
-    return imgs, poses, render_poses, [int(H), int(W), focal, K], i_split
+    return imgs, poses, render_poses, [int(H), int(W), focal, K], near, far, i_split
