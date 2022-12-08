@@ -24,7 +24,14 @@ def get_rays(H, W, focal, pose):
 
 
 # --- data preprocessing ---
-# rays_o, rays_d = get_rays(H, W, K, torch.Tensor(pose))
+# for i in tqdm(range(params.epochs))
+    # img_i = np.random.choice(i_train)
+    # target = images[img_i]
+    # target = torch.Tensor(target).to(device)
+    # pose = poses[img_i, :3,:4]
+        # rays_o, rays_d = get_rays(H, W, K, torch.Tensor(pose))
+
+
 # some sort of data preprocessing HERE
 # batch rays_o and rays_d
 
@@ -35,14 +42,18 @@ def get_rays(H, W, focal, pose):
 #                                                 **render_kwargs_train)
 # generate loss and backprop
 
+# X = num_rays, Y = num_points per ray
+# position embedding max freq = 10, direction embedding max freq = 4
+# embedding output ? [X, Y, 84]
+# model output [X, Y, 4]
 
 # CHUNK = # OF RAYS PER BATCH, MAXIMUM MEMORY USAGE
 # changed ndc to False because we are not using LLFF data
-# viewdirs will always be True from Model
+# changed viewdirs to True, will always be True from Model
 
 def render(H, W, K, chunk=1024*32, rays=None, c2w=None, ndc=False,
                   near=0., far=1.,
-                  use_viewdirs=False, c2w_staticcam=None,
+                  use_viewdirs=True, c2w_staticcam=None,
                   **kwargs):
     if c2w is not None:
         # special case to render full image
@@ -116,8 +127,6 @@ def sample_pdf(bins, weights, N_samples, det=False, pytest=False):
     above = torch.min((cdf.shape[-1]-1) * torch.ones_like(inds), inds)
     inds_g = torch.stack([below, above], -1)  # (batch, N_samples, 2)
 
-    # cdf_g = tf.gather(cdf, inds_g, axis=-1, batch_dims=len(inds_g.shape)-2)
-    # bins_g = tf.gather(bins, inds_g, axis=-1, batch_dims=len(inds_g.shape)-2)
     matched_shape = [inds_g.shape[0], inds_g.shape[1], cdf.shape[-1]]
     cdf_g = torch.gather(cdf.unsqueeze(1).expand(matched_shape), 2, inds_g)
     bins_g = torch.gather(bins.unsqueeze(1).expand(matched_shape), 2, inds_g)
@@ -159,8 +168,6 @@ def render_rays(ray_batch,
                 pytest=False):
     N_rays = ray_batch.shape[0]
     rays_o, rays_d = ray_batch[:, 0:3], ray_batch[:, 3:6]  # [N_rays, 3] each
-
-    # what is this?
     viewdirs = ray_batch[:, -3:] if ray_batch.shape[-1] > 8 else None
     bounds = torch.reshape(ray_batch[..., 6:8], [-1, 1, 2])
     near, far = bounds[..., 0], bounds[..., 1]  # [-1,1]
