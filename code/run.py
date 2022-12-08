@@ -9,9 +9,7 @@ from rays import generate_rays, render
 from params import get_params
 from generate_output import generate_output
 from numpy import clip, uint8
-
-def create_nerf():
-    pass  # placeholder for create_nerf in model.py
+from model import create_nerf
 
 img2mse = lambda x, y : torch.mean((x - y) ** 2)
 mse2psnr = lambda x : -10. * torch.log(x) / torch.log(torch.Tensor([10.]))
@@ -32,7 +30,7 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    data_dir = os.path.join(Path.cwd().parent, *params.datadir)
+    data_dir = os.path.join(Path.cwd().parent, *params.datadir, params.object)
     images, poses, render_poses, [H, W, F, K], near, far, i_split = load_blender_data(
         data_dir
     )
@@ -42,8 +40,7 @@ def main():
     render_poses = torch.Tensor(render_poses).to(device)
 
     #TODO: can we attach optimizer to render_kwargs or smth damn
-    render_kwargs_train, render_kwargs_test, start, grad_vars, optimizer = create_nerf(
-        params
+    render_kwargs_train, render_kwargs_test, start, grad_vars, optimizer = create_nerf(params, device=device,
     )
     global_step = start
 
@@ -55,19 +52,14 @@ def main():
     if params.render_only:
         # generate_output()
         return
+    
     # TODO: implement batching in some other python file
     batch_rays, target_s = None, None
+    pose = None
     for epoch in trange(start + 1, params.epochs + 1):
-        rgb, disp, acc, extras = render( #TODO: need to modify this so the render function matches
-            H,
-            W,
-            K,
-            chunk=params.chunk,
-            rays=batch_rays,
-            verbose=epoch < 10,
-            retraw=True,
-            **render_kwargs_train
-        )
+        #TODO: need to modify this so the render function matches
+        #* near and far are already in the render_kwargs apparently
+        rgb, disp, acc, extras = render(H, W, K, params.chunk, batch_rays, pose, **render_kwargs_train)
         optimizer.zero_grad()
         
         loss = torch.mean((rgb - target_s)**2) #* mean squared error as tensor

@@ -27,11 +27,11 @@ def generate_rays(H, W, K, pose):
     return ray_d, ray_o
 
 
-def render(H, W, K, max_rays, rays, pose, near, far):
+def render(H, W, K, max_rays, rays, pose, near, far, **kwargs):
     # section 4 in NERF
 
-    generate_rays(H, W, K, pose)
-
+    # generate_rays(H, W, K, pose) #TEMP
+    pass
     # batchify_ray -> render_ray -> h_sampling
 
 def h_sampling(bins, weights, n, det=False, tol=1e-5):
