@@ -1,28 +1,32 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 @dataclass
 class ModelParameters:
-    """Class for keep track of all training parameters and hyperparameters."""
+    """
+    Class for keep track of all training parameters and hyperparameters.
+    """
 
     # expname:
     # basedir: './logs/'
-    datadir: str = 'data' / 'nerf_synthetic'
+    datadir: list[str] #* value defined below to avoid defaultfactory hassle
+    epochs: int = 200000
+    
     netdepth: int = 8
     netwidth: int = 256
     netdepth_fine: int = 8
     netwidth_fine: int = 256
-    N_rand: int = 32*32*4
+    N_rand: int = 32*32*4 #* N_rand is the number of rays in the batch
     lrate: float = 5e-4
     lrate_decay: int = 250
     chunk: int = 1024*32
     netchunk: int = 1024*64
-    use_batching: bool = True
+    use_batching: bool = False
     # no_reload:
     # ft_path:
     
     # ----------------------------- rendering options ---------------------------- #
-    N_samples: int = 64
-    N_importance: int = 0
+    N_samples: int = 64 #* N_samples is number of coarse samples per ray
+    N_importance: int = 0 #* N_importance if >= 1, increases the number of bins in the fine sample (only called on the fine NERF once)
     perturb: int = 1.
     # use_viewdirs:
     # i_embed:
@@ -53,5 +57,5 @@ class ModelParameters:
     # i_video:
 
 def get_params():
-    params = ModelParameters()
+    params = ModelParameters(datadir=['data', 'nerf_synthetic'])
     return params
