@@ -152,6 +152,8 @@ def batchify_rays(rays_flat, ray_chunk_sz=1024*32, **kwargs):
     all_ret = {k: torch.cat(all_ret[k], 0) for k in all_ret}
     return all_ret
 
+#*NOTE: added at **_ to capture any unused variables
+#TODO: Please delete this in final code as it is bad practice
 def render_rays(ray_batch,
                 network_fn,
                 network_query_fn,
@@ -165,7 +167,7 @@ def render_rays(ray_batch,
                 white_bkgd=False,
                 raw_noise_std=0.,
                 verbose=False,
-                pytest=False):
+                pytest=False, **_):
     N_rays = ray_batch.shape[0]
     rays_o, rays_d = ray_batch[:, 0:3], ray_batch[:, 3:6]  # [N_rays, 3] each
     viewdirs = ray_batch[:, -3:] if ray_batch.shape[-1] > 8 else None

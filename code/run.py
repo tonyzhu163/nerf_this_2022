@@ -11,12 +11,15 @@ from params import get_params
 from generate_output import generate_output
 from numpy import clip, uint8
 from model import create_nerf
+from batching import BatchedRayLoader
 
-img2mse = lambda x, y : torch.mean((x - y) ** 2)
-mse2psnr = lambda x : -10. * torch.log(x) / torch.log(torch.Tensor([10.]))
-# to8b = lambda x : (255*clip(x,0,1)).astype(uint8) #TODO: why can't we use torch here
-to8b = lambda x : (255*torch.clip(x,0,1)).astype(torch.uint8) #TODO: why can't we use torch here
 
+img2mse = lambda x, y: torch.mean((x - y) ** 2)
+mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
+# TODO: why can't we use torch here
+# to8b = lambda x : (255*clip(x,0,1)).astype(uint8)
+# TODO: why can't we use torch here
+to8b = lambda x: (255 * torch.clip(x, 0, 1)).astype(torch.uint8)
 
 
 def update_lr(params, optimizer, global_step):
@@ -24,8 +27,9 @@ def update_lr(params, optimizer, global_step):
     decay_steps = params.lrate_decay * 1000
     new_lrate = params.lrate * (decay_rate ** (global_step / decay_steps))
     for param_group in optimizer.param_groups:
-        param_group['lr'] = new_lrate
-    
+        param_group["lr"] = new_lrate
+
+
 def main():
     params = get_params()
 
@@ -40,8 +44,10 @@ def main():
 
     render_poses = torch.Tensor(render_poses).to(device)
 
-    #TODO: can we attach optimizer to render_kwargs or smth damn
-    render_kwargs_train, render_kwargs_test, start, grad_vars, optimizer = create_nerf(params, device=device,
+    # TODO: can we attach optimizer to render_kwargs or smth damn
+    render_kwargs_train, render_kwargs_test, start, grad_vars, optimizer = create_nerf(
+        params,
+        device=device,
     )
     global_step = start
 
@@ -51,33 +57,50 @@ def main():
 
     # Short circuit if only rendering out from trained model
     if params.render_only:
+        #TODO
         # generate_output()
         return
+
+    # ------------------------------------------------------------------------ #
+    #                          Main Training Loop                              #
+    # ------------------------------------------------------------------------ #
     
-    # TODO: implement batching in some other python file
-    batch_rays, target_s = [None, None], None
-    pose = None
+    # batches and creates rays from poses
+    dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode='single')
+    
     for epoch in trange(start + 1, params.epochs + 1):
+        # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #
+        
+        rays, target_rgb = dataloader.get_rays()
+        
         #TODO: could probably clean up the function call parameters
         #TODO: switch render form temp_code to rays.py
         rgb, disp, acc, extras = render(
             H, W, K, params.ray_chunk_sz, rays, **render_kwargs_train
         )
         optimizer.zero_grad()
-        
-        loss = torch.mean((rgb - target_s)**2) #* mean squared error as tensor
-        psnr = mse2psnr(loss) #* peak signal-to-noise ratio as tensor
-                
+        #rgb: (4096,3), target_rgb (4096, 4)
+        loss = torch.mean((rgb - target_rgb) ** 2)  # * mean squared error as tensor
+        psnr = mse2psnr(loss)  # * peak signal-to-noise ratio as tensor
+
         loss.backward()
         optimizer.step()
 
         update_lr(params, optimizer, global_step)
-        if epoch%params.i_weights==0: pass
-        if epoch%params.i_video==0 and epoch > 0: pass
-        if epoch%params.i_testset==0 and epoch > 0: pass
-        
-        if epoch%params.i_print==0:
-            tqdm.write(f"[TRAIN] Iter: {epoch} Loss: {loss.item()}  PSNR: {psnr.item()}")
+
+        # --------------- Saving Model Output / Weights ---------------------- #
+        #TODO
+        if epoch % params.i_weights == 0:
+            pass
+        if epoch % params.i_video == 0 and epoch > 0:
+            pass
+        if epoch % params.i_testset == 0 and epoch > 0:
+            pass
+
+        if epoch % params.i_print == 0:
+            tqdm.write(
+                f"[TRAIN] Iter: {epoch} Loss: {loss.item()}  PSNR: {psnr.item()}"
+            )
         global_step += 1
 
 
