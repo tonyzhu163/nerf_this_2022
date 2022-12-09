@@ -73,7 +73,7 @@ def chunkify(fn, chunk_sz):
         return fn
 
 
-def run_network(inputs, viewdirs, fn, embed_fn_pos, embed_fn_dir, point_chunk_sz=1024*64):
+def run_network(inputs, viewdirs, network_fn, embed_fn_pos, embed_fn_dir, point_chunk_sz=1024*64, **kwargs):
     '''
     inputs: positions of points, dimension: x * y * 3
     (x: number of rays. y: number of points per ray.)
@@ -89,7 +89,7 @@ def run_network(inputs, viewdirs, fn, embed_fn_pos, embed_fn_dir, point_chunk_sz
     embedded_dirs = embed_fn_dir(input_dirs_flat)
     embedded = torch.cat([embedded_pos, embedded_dirs], -1)
 
-    outputs_flat = chunkify(fn, point_chunk_sz)(embedded)
+    outputs_flat = chunkify(network_fn, point_chunk_sz)(embedded)
     output_shape = list(inputs.shape[:-1])
     output_shape.append(outputs_flat.shape[-1])
     outputs = torch.reshape(outputs_flat,output_shape)

@@ -47,28 +47,28 @@ def render(H, W, K, ray_chunk_sz, rays, near, far, pose=None, **kwargs):
     return output, extra
 
 #TODO: remove ray_batch_sz if not used
-def render_ray(rays, n_samples, n_importance=0, perturb=0, ray_batch_sz=1024*32, **kwargs):
+def render_ray(rays, N_samples, n_importance=0, perturb=0, ray_batch_sz=1024*32, **kwargs):
     n_rays = rays.shape[0]
     rays_o, rays_d = rays[:, 0:3], rays[:, 3:6]
     near, far = rays[:, 6:7], rays[:, 7:8]
 
-    z_steps = torch.linspace(0, 1, n_samples)
+    z_steps = torch.linspace(0, 1, N_samples)
     z_vals = near * (1 - z_steps) + far * z_steps
-    z_vals = z_vals.expand(n_rays, n_samples)
+    z_vals = z_vals.expand(n_rays, N_samples)
     z_vals_mid = 0.5 * (z_vals[:, :-1] + z_vals[:, 1:])
 
     pts_coarse = sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb)
 
     # --- NOT DONE ---
-    raw = run_network(pts_coarse, rays_d, )
-    rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, )
+    raw = run_network(pts_coarse, rays_d, **kwargs)
+    rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, )
 
     if n_importance > 0:
         rgb_map_0, disp_map_0, acc_map_0 = rgb_map, disp_map, acc_map
         pts_fine, z_samples = sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, n_importance, perturb)
 
         # --- NOT DONE ---
-        raw = run_network(pts_fine, rays_d, )
+        raw = run_network(pts_fine, rays_d, **kwargs)
         rgb_map, disp_map, acc_map, _, _ = raw2outputs(raw, )
 
     ret = {'rgb_map': rgb_map, 'disp_map': disp_map, 'acc_map': acc_map}
