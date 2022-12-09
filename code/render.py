@@ -1,8 +1,9 @@
 import torch
 
-from rays import sample_coarse, sample_fine
+from rays import generate_rays, sample_coarse, sample_fine
 
-def render(H, W, K, max_rays, rays, pose=None, **kwargs):
+
+def render(H, W, K, max_rays, rays, near, far, pose=None, **kwargs):
     # section 4 in NERF
 
     # --- Prepare Input ---
@@ -33,6 +34,7 @@ def render(H, W, K, max_rays, rays, pose=None, **kwargs):
 
     return
 
+
 def batchify_ray(rays_flat, chunk=1024*32, **kwargs):
     for i in range(0, rays_flat.shape[0], chunk):
         ret = render_ray(rays_flat[i:i + chunk], **kwargs)
@@ -40,6 +42,7 @@ def batchify_ray(rays_flat, chunk=1024*32, **kwargs):
     # --- OUTPUT DEPENDS ON RENDER_RAY ---
 
     return
+
 
 def render_ray(rays, n_samples, n_importance=0, perturb=0, chunk=1024*32):
     n_rays = rays.shape[0]
@@ -49,9 +52,12 @@ def render_ray(rays, n_samples, n_importance=0, perturb=0, chunk=1024*32):
     z_steps = torch.linspace(0, 1, n_samples)
     z_vals = near * (1 - z_steps) + far * z_steps
     z_vals = z_vals.expand(n_rays, n_samples)
+    z_vals_mid = 0.5 * (z_vals[:, :-1] + z_vals[:, 1:])
 
-    sample_coarse(z_vals, perturb=0)
+    pts_coarse = sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb)
 
     if n_importance > 0:
+        pts_fine = sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, n_importance, perturb)
 
-        sample_fine(z_vals)
+
+    return

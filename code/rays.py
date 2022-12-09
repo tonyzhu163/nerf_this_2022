@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+
 def generate_rays(H, W, K, pose):
     focal = K[0][0]
     
@@ -13,9 +14,9 @@ def generate_rays(H, W, K, pose):
 
     dx = (x + 0.5 - W/2) / focal
     dy = -(y + 0.5 - H/2) / focal
-    dir = torch.stack([dx, dy, -torch.ones_like(x)], -1)
+    dirs = torch.stack([dx, dy, -torch.ones_like(x)], -1)
 
-    ray_d = dir @ pose[:3, :3].T
+    ray_d = dirs @ pose[:3, :3].T
     ray_d = ray_d / (torch.norm(ray_d, dim=-1, keepdim=True) + 1e-10)
     ray_o = pose[:3, -1].expand(ray_d.shape)
 
@@ -25,6 +26,7 @@ def generate_rays(H, W, K, pose):
     # normalized direction and origin
     # both [H*W, 3]
     return ray_d, ray_o
+
 
 def h_sampling(bins, weights, n, det=False, tol=1e-5):
     # section 5.2 in NERF
@@ -56,13 +58,27 @@ def h_sampling(bins, weights, n, det=False, tol=1e-5):
     return bins_g[..., 0] + (u-cdf_g[..., 0])/denom * (bins_g[..., 1] - bins_g[..., 0])
 
 
-def sample_coarse(z_vals, perturb):
+def sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb):
     if perturb > 0.:
+        upper = torch.cat([z_vals_mid, z_vals[:, -1:]], -1)
+        lower = torch.cat([z_vals[:, :1], z_vals_mid], -1)
+        perturb_rand = perturb * torch.rand(z_vals.shape)
+        z_vals = lower + (upper - lower) * perturb_rand
 
-def sample_fine(z_vals):
-    z_vals_mid = .5 * (z_vals[..., 1:] + z_vals[..., :-1])
-    z_samples = sample_pdf(z_vals_mid, weights[..., 1:-1], N_importance, det=(perturb == 0.), pytest=pytest)
-    z_samples = z_samples.detach()
+    pts_coarse_sampled = rays_o.unsqueeze(1) + rays_d.unsqueeze(1) * z_vals.unsqueeze(2)
+
+    return pts_coarse_sampled
+
+
+def sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, n_importance, perturb):
+    z_samples = h_sampling(z_vals_mid, weights[:, 1:-1], n_importance, det=(perturb == 0)).detach()
+    z_vals, _ = torch.sort(torch.cat([z_vals, z_samples], -1), -1)
+    pts_fine_sampled = rays_o.unsqueeze(1) + rays_d.unsqueeze(1) * z_vals.unsqueeze(2)
+
+    return pts_fine_sampled
+
+
+
 
 
 
