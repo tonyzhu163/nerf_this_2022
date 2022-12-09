@@ -37,12 +37,17 @@ def render(H, W, K, max_rays, rays, near, far, pose=None, **kwargs):
     records = {k: torch.cat(records[k], 0) for k in records}
     # why do we need to reshape here?
 
+    for k in records:
+        k_sh = list(sh[:-1]) + list(records[k].shape[1:])
+        records[k] = torch.reshape(records[k], k_sh)
+
     inf = ['rgb_map', 'disp_map', 'acc_map']
-    output = {i: records[inf] for i in inf}
-    return output
+    output = [records[i] for i in inf]
+    extra = {i: records[i] for i in records if i not in inf}
+    return output, extra
 
 
-def render_ray(rays, n_samples, n_importance=0, perturb=0, chunk=1024*32):
+def render_ray(rays, n_samples, n_importance=0, perturb=0, chunk=1024*32, **kwargs):
     n_rays = rays.shape[0]
     rays_o, rays_d = rays[:, 0:3], rays[:, 3:6]
     near, far = rays[:, 6:7], rays[:, 7:8]
