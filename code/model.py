@@ -52,13 +52,14 @@ class NeRF(nn.Module):
                 h = torch.cat([posi_encode, h], -1)
         
         density = self.density_linear(h)
-        ## density = F.relu(density)
         h = self.feature_linear(h)
         h = torch.cat([h, dir_encode], -1)
         h = self.view_linear(h)
         h = F.relu(h)
         rgb = self.rgb_linear(h)
         outputs = torch.cat([rgb, density], -1)
+        ## The paper says there should be a sigmoid for rgb and a relu for density,
+        ## but those are implemented in raw2outputs
         return outputs
 
 def batchify(fn, chunk):
