@@ -10,7 +10,6 @@ class ModelParameters:
 
     # expname:
     # basedir: './logs/'
-    # * value defined below to avoid defaultfactory hassle
     datadir: list[str]
     object: str
     epochs: int = 10000
@@ -20,12 +19,15 @@ class ModelParameters:
     netwidth: int = 256
     netdepth_fine: int = 8
     netwidth_fine: int = 256
-    # * N_rand is the number of rays in the batch, This should be ray_batch_size
-    N_rand: int = 32 * 32 * 4
+    # * ray_batch_sz is the number of rays in the batch
+    ray_batch_sz: int = 32 * 32 * 4 #* previously N_rand
     lrate: float = 5e-4
     lrate_decay: int = 250
-    chunk: int = 1024 * 8  # This should be max_ray, updated, original amount will crash gpu memory
-    netchunk: int = 1024 * 16  # This should be max_points
+    # render_batch further into mini-batches to avoid OOM during rendering
+    # render_batch_sz
+    #* ray_chunk_sz might only used during rendering, since chunks are larger than batch size
+    ray_chunk_sz: int = 1024 * 8 #* previously chunk
+    point_chunk_sz: int = 1024 * 16  #* previously netchunk
     use_batching: bool = False
     # no_reload:
     # ft_path:
@@ -49,8 +51,8 @@ class ModelParameters:
     #* render the test set instead of render_poses path
     render_test: bool = True
     # render_factor:
-    # precrop_iters:
-    # precrop_frac:
+    precrop_iters: int = 500 #* customize this for each model
+    precrop_frac: float = 0.5 #* customize this for each model
     # dataset_type:
     # testskip:
     # shape:

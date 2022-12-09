@@ -51,7 +51,7 @@ def get_rays(H, W, focal, pose):
 # changed ndc to False because we are not using LLFF data
 # changed viewdirs to True, will always be True from Model
 
-def render(H, W, K, chunk=1024*32, rays=None, c2w=None, ndc=False,
+def render(H, W, K, ray_chunk_sz=1024*32, rays=None, c2w=None, ndc=False,
                   near=0., far=1.,
                   use_viewdirs=True, c2w_staticcam=None,
                   **kwargs):
@@ -85,7 +85,7 @@ def render(H, W, K, chunk=1024*32, rays=None, c2w=None, ndc=False,
     if use_viewdirs:
         rays = torch.cat([rays, viewdirs], -1)
 
-    all_ret = batchify_rays(rays, chunk, **kwargs)
+    all_ret = batchify_rays(rays, ray_chunk_sz, **kwargs)
     for k in all_ret:
         k_sh = list(sh[:-1]) + list(all_ret[k].shape[1:])
         all_ret[k] = torch.reshape(all_ret[k], k_sh)
@@ -138,12 +138,12 @@ def sample_pdf(bins, weights, N_samples, det=False, pytest=False):
 
     return samples
 
-def batchify_rays(rays_flat, chunk=1024*32, **kwargs):
+def batchify_rays(rays_flat, ray_chunk_sz=1024*32, **kwargs):
     """Render rays in smaller minibatches to avoid OOM.
     """
     all_ret = {}
-    for i in range(0, rays_flat.shape[0], chunk):
-        ret = render_rays(rays_flat[i:i+chunk], **kwargs)
+    for i in range(0, rays_flat.shape[0], ray_chunk_sz):
+        ret = render_rays(rays_flat[i:i+ray_chunk_sz], **kwargs)
         for k in ret:
             if k not in all_ret:
                 all_ret[k] = []
@@ -250,7 +250,7 @@ def batchify(fn, chunk):
         return torch.cat([fn(inputs[i:i+chunk]) for i in range(0, inputs.shape[0], chunk)], 0)
     return ret
 
-def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, netchunk=1024*64):
+def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, point_chunk_sz=1024*64):
     """Prepares inputs and applies network 'fn'.
     """
     inputs_flat = torch.reshape(inputs, [-1, inputs.shape[-1]])
@@ -262,7 +262,7 @@ def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, netchunk=1024*64):
         embedded_dirs = embeddirs_fn(input_dirs_flat)
         embedded = torch.cat([embedded, embedded_dirs], -1)
 
-    outputs_flat = batchify(fn, netchunk)(embedded)
+    outputs_flat = batchify(fn, point_chunk_sz)(embedded)
     outputs = torch.reshape(outputs_flat, list(inputs.shape[:-1]) + [outputs_flat.shape[-1]])
     return outputs
 
@@ -274,7 +274,7 @@ def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, netchunk=1024*64):
 network_query_fn = lambda inputs, viewdirs, network_fn : run_network(inputs, viewdirs, network_fn,
                                                                 embed_fn=embed_fn,
                                                                 embeddirs_fn=embeddirs_fn,
-                                                                netchunk=args.netchunk)
+                                                                point_chunk_sz=args.point_chunk_sz)
 
 # Must attach to output of model
 def raw2outputs(raw, z_vals, rays_d, raw_noise_std=0, white_bkgd=False, pytest=False):

@@ -5,7 +5,8 @@ import torch
 from tqdm import tqdm, trange
 
 from load_blender import load_blender_data
-from rays import generate_rays, render
+# from rays import generate_rays, render
+from temp_code import render
 from params import get_params
 from generate_output import generate_output
 from numpy import clip, uint8
@@ -57,9 +58,11 @@ def main():
     batch_rays, target_s = [None, None], None
     pose = None
     for epoch in trange(start + 1, params.epochs + 1):
-        #TODO: need to modify this so the render function matches
-        #* near and far are already in the render_kwargs apparently
-        rgb, disp, acc, extras = render(H, W, K, params.chunk, batch_rays, **render_kwargs_train)
+        #TODO: could probably clean up the function call parameters
+        #TODO: switch render form temp_code to rays.py
+        rgb, disp, acc, extras = render(
+            H, W, K, params.ray_chunk_sz, rays, **render_kwargs_train
+        )
         optimizer.zero_grad()
         
         loss = torch.mean((rgb - target_s)**2) #* mean squared error as tensor
