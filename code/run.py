@@ -5,11 +5,9 @@ import torch
 from tqdm import tqdm, trange
 
 from load_blender import load_blender_data
-# from rays import generate_rays, render
-from temp_code import render
+from render import render
 from params import get_params
 from generate_output import generate_output
-from numpy import clip, uint8
 from model import create_nerf
 from batching import BatchedRayLoader
 

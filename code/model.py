@@ -52,21 +52,22 @@ class NeRF(nn.Module):
                 h = torch.cat([posi_encode, h], -1)
         
         density = self.density_linear(h)
-        ## density = F.relu(density)
         h = self.feature_linear(h)
         h = torch.cat([h, dir_encode], -1)
         h = self.view_linear(h)
         h = F.relu(h)
         rgb = self.rgb_linear(h)
         outputs = torch.cat([rgb, density], -1)
+        ## The paper says there should be a sigmoid for rgb and a relu for density,
+        ## but those are implemented in raw2outputs
         return outputs
 
-def batchify(fn, ray_chunk_sz):
+def chunkify(fn, chunk_sz):
     """Constructs a version of 'fn' that applies to smaller batches.
     """
-    if ray_chunk_sz != None:
+    if chunk_sz != None:
         def ret(inputs):
-            return torch.cat([fn(inputs[i:i+ray_chunk_sz]) for i in range(0, inputs.shape[0], ray_chunk_sz)], 0)
+            return torch.cat([fn(inputs[i:i+chunk_sz]) for i in range(0, inputs.shape[0], chunk_sz)], 0)
         return ret
     else:
         return fn
@@ -88,7 +89,7 @@ def run_network(inputs, viewdirs, fn, embed_fn_pos, embed_fn_dir, point_chunk_sz
     embedded_dirs = embed_fn_dir(input_dirs_flat)
     embedded = torch.cat([embedded_pos, embedded_dirs], -1)
 
-    outputs_flat = batchify(fn, point_chunk_sz)(embedded)
+    outputs_flat = chunkify(fn, point_chunk_sz)(embedded)
     output_shape = list(inputs.shape[:-1])
     output_shape.append(outputs_flat.shape[-1])
     outputs = torch.reshape(outputs_flat,output_shape)
