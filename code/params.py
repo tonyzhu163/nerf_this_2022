@@ -65,11 +65,11 @@ class ModelParameters:
     # spherify:
     # llffhold:
     ## logging/saving options
-    # i_print: number of epochs per console printout
-    # i_img: number of epochs per tensorboard output
-    # i_weights: number of epochs per checkpoint
-    # i_testset:
-    # i_video: number of epochs per render
+    i_print: int = 100 # number of epochs per console printout
+    i_img: int = 500 # number of epochs per tensorboard output
+    i_weights: int = 1000 # number of epochs per checkpoint, previously 10000
+    i_testset: int = 1000 #
+    i_video: int = 5000 # number of epochs per render
 
 
 def get_params():

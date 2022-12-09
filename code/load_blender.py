@@ -41,7 +41,7 @@ def pose_spherical(theta, phi, radius):
     return c2w
 
 
-def load_blender_data(basedir, half_res=False, testskip=1):
+def load_blender_data(basedir, white_bkgd, half_res=False, testskip=1):
     splits = ['train', 'val', 'test']
     metas = {}
     for s in splits:
@@ -91,10 +91,17 @@ def load_blender_data(basedir, half_res=False, testskip=1):
             imgs_half_res[i] = cv2.resize(img, (W, H), interpolation=cv2.INTER_AREA)
         imgs = imgs_half_res
     
+    #TODO: refactor
+    if white_bkgd:
+        imgs = imgs[...,:3]*imgs[...,-1:] + (1.-imgs[...,-1:])
+    else:
+        imgs = imgs[...,:3]
+    
     K = np.array([
             [focal, 0, 0.5*W],
             [0, focal, 0.5*H],
             [0, 0, 1]
         ])
     near, far = 2., 6.
+    
     return imgs, poses, render_poses, [int(H), int(W), focal, K], near, far, i_split
