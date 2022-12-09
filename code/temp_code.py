@@ -1,8 +1,10 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
+from torch.distributions import Categorical
+import pdb
 
-from .rays import generate_rays
+from rays import generate_rays
 
 def get_rays(H, W, focal, pose):
     generate_rays(H, W, focal, pose)
@@ -311,4 +313,12 @@ def raw2outputs(raw, z_vals, rays_d, raw_noise_std=0, white_bkgd=False, pytest=F
     if white_bkgd:
         rgb_map = rgb_map + (1. - acc_map[..., None])
 
-    return rgb_map, disp_map, acc_map, weights, depth_map
+    #TODO: REFACTOR
+    # Calculate weights sparsity loss
+    try:
+        entropy = Categorical(probs = torch.cat([weights, 1.0-weights.sum(-1, keepdim=True)+1e-6], dim=-1)).entropy()
+    except:
+        pdb.set_trace()
+    sparsity_loss = entropy
+    
+    return rgb_map, disp_map, acc_map, weights, depth_map, sparsity_loss
