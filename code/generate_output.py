@@ -21,3 +21,6 @@ def generate_output(params):
         rgbs, _ = render_path(render_poses, hwf, K, params.chunk, render_kwargs_test, gt_imgs=images, savedir=testsavedir, render_factor=params.render_factor)
         print('Done rendering', testsavedir)
         imageio.mimwrite(os.path.join(testsavedir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
+
+
+def render_path():

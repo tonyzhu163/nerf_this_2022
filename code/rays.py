@@ -26,33 +26,6 @@ def generate_rays(H, W, K, pose):
     # both [H*W, 3]
     return ray_d, ray_o
 
-
-def render(H, W, K, max_rays, rays, pose=None, **kwargs):
-    # section 4 in NERF
-    if pose is not None:
-        generate_rays(H, W, K, pose)
-    else:
-        rays_d, rays_o = rays
-
-    viewdirs = rays_d
-    sh = rays_d.shape
-    rays_o = rays_o.float()
-    rays_d = rays_d.float()
-
-    # near and far from ** kwargs?
-    near, far = near * torch.ones_like(rays_d[..., :1]), far * torch.ones_like(rays_d[..., :1])
-
-    # [H*W, 3 + 3 + 1 + 1]
-    rays = torch.cat([rays_o, rays_d, near, far], -1)
-
-    # [H*W, 11]
-    rays = torch.cat([rays, viewdirs], -1)
-
-
-
-
-    # batchify_ray -> render_ray -> h_sampling
-
 def h_sampling(bins, weights, n, det=False, tol=1e-5):
     # section 5.2 in NERF
     n_rays, n_samples = weights.shape
@@ -81,6 +54,18 @@ def h_sampling(bins, weights, n, det=False, tol=1e-5):
     denom[denom < tol] = 1
 
     return bins_g[..., 0] + (u-cdf_g[..., 0])/denom * (bins_g[..., 1] - bins_g[..., 0])
+
+
+def sample_coarse(z_vals, perturb):
+    if perturb > 0.:
+
+def sample_fine(z_vals):
+    z_vals_mid = .5 * (z_vals[..., 1:] + z_vals[..., :-1])
+    z_samples = sample_pdf(z_vals_mid, weights[..., 1:-1], N_importance, det=(perturb == 0.), pytest=pytest)
+    z_samples = z_samples.detach()
+
+
+
 
 
 
