@@ -93,7 +93,14 @@ def main():
         if epoch % params.i_weights == 0:
             pass
         if epoch % params.i_video == 0 and epoch > 0:
-            pass
+            #TODO: unfinished
+            with torch.no_grad():
+                rgbs, disps = render_path(render_poses, hwf, K, args.chunk, render_kwargs_test)
+            print('Done, saving', rgbs.shape, disps.shape)
+            moviebase = os.path.join(basedir, expname, '{}_spiral_{:06d}_'.format(expname, i))
+            imageio.mimwrite(moviebase + 'rgb.mp4', to8b(rgbs), fps=30, quality=8)
+            imageio.mimwrite(moviebase + 'disp.mp4', to8b(disps / np.max(disps)), fps=30, quality=8)
+
         if epoch % params.i_testset == 0 and epoch > 0:
             pass
 
