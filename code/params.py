@@ -71,6 +71,7 @@ class ModelParameters:
     i_weights: int = 1000 # number of epochs per checkpoint, previously 10000
     i_testset: int = 1000 #
     i_video: int = 5000 # number of epochs per render
+    tensorboard: bool = True
 
 
 def get_params():
