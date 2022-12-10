@@ -74,9 +74,10 @@ def main():
         
         #TODO: could probably clean up the function call parameters
         #TODO: switch render form temp_code to rays.py
-        rgb, disp, acc, extras = render(
+        render_outputs, extras = render(
             H, W, K, params.ray_chunk_sz, rays, **render_kwargs_train
         )
+        rgb, disp, acc = render_outputs
         optimizer.zero_grad()
         #rgb: (4096,3), target_rgb (4096, 4)
         loss = torch.mean((rgb - target_rgb) ** 2)  # * mean squared error as tensor
