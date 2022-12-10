@@ -7,7 +7,7 @@ from model import run_network
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def render(H, W, K, ray_chunk_sz, rays, near, far, **kwargs):
+def render(H, W, K, ray_chunk_sz, rays, device, near, far, **kwargs):
     
     # section 4 in NERF
 
@@ -30,7 +30,7 @@ def render(H, W, K, ray_chunk_sz, rays, near, far, **kwargs):
     # --- Render Ray in Chunks ---
     records = defaultdict(list)
     for i in range(0, rays.shape[0], ray_chunk_sz):
-        ret = render_ray(rays[i:i + ray_chunk_sz, :], **kwargs)
+        ret = render_ray(rays[i:i + ray_chunk_sz, :], device=device, **kwargs)
         for k in ret:
             records[k].append(ret[k])
 
@@ -46,8 +46,10 @@ def render(H, W, K, ray_chunk_sz, rays, near, far, **kwargs):
     extra = {i: records[i] for i in records if i not in inf}
     return output, extra
 
+
 #TODO: remove ray_batch_sz if not used
-def render_ray(rays, N_samples, n_importance=0, perturb=0, raw_noise_std =0., white_bkgd=False, ray_batch_sz=1024*32, **kwargs):
+def render_ray(rays, N_samples, device,
+               n_importance=0, perturb=0, raw_noise_std =0., white_bkgd=False, **kwargs):
     n_rays = rays.shape[0]
     rays_o, rays_d = rays[:, 0:3], rays[:, 3:6]
     near, far = rays[:, 6:7], rays[:, 7:8]
@@ -60,19 +62,20 @@ def render_ray(rays, N_samples, n_importance=0, perturb=0, raw_noise_std =0., wh
     z_vals = z_vals.expand(n_rays, N_samples)
     z_vals_mid = 0.5 * (z_vals[:, :-1] + z_vals[:, 1:])
 
-    pts_coarse = sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb)
+    pts_coarse = sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb, device)
 
-    # --- NOT DONE ---
     raw = run_network(pts_coarse, rays_d, **kwargs)
-    rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, raw_noise_std, white_bkgd, False)
+    rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, device,
+                                                                 raw_noise_std, white_bkgd, False)
 
     if n_importance > 0:
         rgb_map_0, disp_map_0, acc_map_0 = rgb_map, disp_map, acc_map
         pts_fine, z_samples = sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, n_importance, perturb)
 
-        # --- NOT DONE ---
+
         raw = run_network(pts_fine, rays_d, **kwargs)
-        rgb_map, disp_map, acc_map, _, _ = (raw, z_vals, rays_d, raw_noise_std, white_bkgd, False)
+        rgb_map, disp_map, acc_map, _, _ = raw2outputs(raw, z_vals, rays_d, device,
+                                                       raw_noise_std, white_bkgd, False)
 
     ret = {'rgb_map': rgb_map, 'disp_map': disp_map, 'acc_map': acc_map}
     if n_importance > 0:

@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from encoders import get_embedder
+import os
 
 ## We always assume that our model uses 5d inputs, so we will not use
 ## the "use_viewdir" argument as in the codes we reference.
@@ -61,6 +62,35 @@ class NeRF(nn.Module):
         ## The paper says there should be a sigmoid for rgb and a relu for density,
         ## but those are implemented in raw2outputs
         return outputs
+
+    def load_weights_from_keras(self, weights):
+        
+        # Load pts_linears
+        for i in range(self.D):
+            idx_pts_linears = 2 * i
+            self.hidden_layers[i].weight.data = torch.from_numpy(np.transpose(weights[idx_pts_linears]))    
+            self.hidden_layers[i].bias.data = torch.from_numpy(np.transpose(weights[idx_pts_linears+1]))
+        
+        # Load feature_linear
+        idx_density_linear = 2 * self.D
+        self.density_linear.weight.data = torch.from_numpy(np.transpose(weights[idx_density_linear]))
+        self.density_linear.bias.data = torch.from_numpy(np.transpose(weights[idx_density_linear+1]))
+
+        # Load views_linears
+        idx_feature_linear = 2 * self.D + 2
+        self.feature_linear.weight.data = torch.from_numpy(np.transpose(weights[idx_feature_linear]))
+        self.feature_linear.bias.data = torch.from_numpy(np.transpose(weights[idx_feature_linear+1]))
+
+        # Load rgb_linear
+        idx_view_linear = 2 * self.D + 4
+        self.view_linear.weight.data = torch.from_numpy(np.transpose(weights[idx_view_linear]))
+        self.view_linear.bias.data = torch.from_numpy(np.transpose(weights[idx_view_linear+1]))
+
+        # Load alpha_linear
+        idx_rgb_linear = 2 * self.D + 6
+        self.rgb_linear.weight.data = torch.from_numpy(np.transpose(weights[idx_rgb_linear]))
+        self.rgb_linear.bias.data = torch.from_numpy(np.transpose(weights[idx_rgb_linear+1]))
+        
 
 def chunkify(fn, chunk_sz):
     """Constructs a version of 'fn' that applies to smaller batches.
@@ -135,36 +165,37 @@ def create_nerf(args, device):
     start = 0
     
     #TEMP: add these back when implemented properly (also add to params)
-    # basedir = args.basedir
-    # expname = args.expname
+    savedir = args.savedir
+    object = args.object
     
-    '''
     ##########################
 
     # Load checkpoints
     if args.ft_path is not None and args.ft_path!='None':
         ckpts = [args.ft_path]
     else:
-        ckpts = [os.path.join(basedir, expname, f) for f in sorted(os.listdir(os.path.join(basedir, expname))) if 'tar' in f]
+        ckpts = [os.path.join("..", *savedir, "weights", object, f) for f in sorted(os.listdir(os.path.join("..", *savedir, "weights", object))) if 'tar' in f]
 
     print('Found ckpts', ckpts)
     if len(ckpts) > 0 and not args.no_reload:
         ckpt_path = ckpts[-1]
         print('Reloading from', ckpt_path)
         ckpt = torch.load(ckpt_path)
-
+        
         start = ckpt['global_step']
         optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-
+        
         # Load model
         model.load_state_dict(ckpt['network_fn_state_dict'])
         if model_fine is not None:
             model_fine.load_state_dict(ckpt['network_fine_state_dict'])
+        '''
         if args.i_embed==1:
             embed_fn.load_state_dict(ckpt['embed_fn_state_dict'])
+        '''
 
     ##########################
-    '''
+    
     render_kwargs_train = {
         'network_query_fn' : network_query_fn,
         'perturb' : args.perturb,

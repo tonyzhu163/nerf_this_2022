@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import torch
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm, trange
 
 from load_blender import load_blender_data
@@ -10,7 +11,6 @@ from params import get_params
 from generate_output import generate_output
 from model import create_nerf
 from batching import BatchedRayLoader
-
 
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
@@ -70,9 +70,11 @@ def main():
     dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode)
     
     #####testing purpose#######
-    params.i_weights = 10
-    params.epochs = 100
-    ###########################  
+    params.i_weights = 1000
+    params.epochs = 5000
+    ###########################
+
+    writer = SummaryWriter()
 
     for epoch in trange(start + 1, params.epochs + 1):
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #
@@ -81,7 +83,7 @@ def main():
         
         #TODO: could probably clean up the function call parameters
         render_outputs, extras = render(
-            H, W, K, params.ray_chunk_sz, rays, **render_kwargs_train
+            H, W, K, params.ray_chunk_sz, rays, device, **render_kwargs_train
         )
         rgb, disp, acc = render_outputs
         optimizer.zero_grad()
@@ -124,7 +126,7 @@ def main():
                         'network_fn_state_dict': render_kwargs_train['network_fn'].state_dict(),
                         'optimizer_state_dict': optimizer.state_dict(),
                     }, file_path)
-                print(f'Saved checkpoints for step {global_step} at', file_path)
+                print(f'Saved checkpoints for step {global_step+1} at', file_path)
         '''
         if epoch % params.i_video == 0 and epoch > 0:
             #TODO: unfinished, testing.
@@ -143,6 +145,15 @@ def main():
                 f"[TRAIN] Iter: {epoch} Loss: {loss.item()}  PSNR: {psnr.item()}"
             )
         global_step += 1
+
+
+        # --- DRAW ---
+
+        if params.tensorboard:
+            writer.add_scalar('Loss/train', loss, epoch)
+            # writer.add_scalar('Loss/test', np.random.random(), epoch)
+            writer.add_scalar('PSNR/train', psnr, epoch)
+            # writer.add_scalar('PSNR/test', np.random.random(), epoch)
 
 
 if __name__ == "__main__":

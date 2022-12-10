@@ -30,8 +30,8 @@ class ModelParameters:
     ray_chunk_sz: int = 1024 * 8 #* previously chunk
     point_chunk_sz: int = 1024 * 16  #* previously netchunk
     use_batching: bool = False
-    # no_reload:
-    # ft_path:
+    no_reload: bool = True
+    ft_path: str = None
 
     # ----------------------------- rendering options ---------------------------- #
     # * N_samples is number of coarse samples per ray
@@ -71,6 +71,7 @@ class ModelParameters:
     i_weights: int = 1000 # number of epochs per checkpoint, previously 10000
     i_testset: int = 1000 #
     i_video: int = 5000 # number of epochs per render
+    tensorboard: bool = True
 
 
 def get_params():
