@@ -70,7 +70,9 @@ def main():
     #####testing purpose#######
     params.i_weights = 1000
     params.epochs = 5000
-    ###########################  
+    ###########################
+
+    writer = SummaryWriter()
 
     for epoch in trange(start + 1, params.epochs + 1):
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #
@@ -123,7 +125,7 @@ def main():
                         'network_fn_state_dict': render_kwargs_train['network_fn'].state_dict(),
                         'optimizer_state_dict': optimizer.state_dict(),
                     }, file_path)
-                print(f'Saved checkpoints for step {global_step} at', file_path)
+                print(f'Saved checkpoints for step {global_step+1} at', file_path)
         '''
         if epoch % params.i_video == 0 and epoch > 0:
             #TODO: unfinished, testing.
@@ -147,7 +149,6 @@ def main():
         # --- DRAW ---
 
         if params.tensorboard:
-            writer = SummaryWriter()
             writer.add_scalar('Loss/train', loss, epoch)
             # writer.add_scalar('Loss/test', np.random.random(), epoch)
             writer.add_scalar('PSNR/train', psnr, epoch)
