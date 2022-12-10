@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def raw2outputs(raw, z_vals, rays_d, raw_noise_std=0, white_bkgd=False, pytest=False):
     '''
     input
@@ -20,6 +22,7 @@ def raw2outputs(raw, z_vals, rays_d, raw_noise_std=0, white_bkgd=False, pytest=F
 
     dists = z_vals[...,1:] - z_vals[...,:-1]
     temp = torch.Tensor([1e10]).expand(dists[...,0:1].shape)
+    temp = temp.to(device)
     dists = torch.cat([dists,temp],-1)
     dir_norms = torch.norm(rays_d[...,None,:], dim=-1)
     dists = dists * dir_norms    # [N_rays, N_samples]
@@ -39,7 +42,7 @@ def raw2outputs(raw, z_vals, rays_d, raw_noise_std=0, white_bkgd=False, pytest=F
 
     exps = torch.exp(-density*dists)    # [N_rays, N_samples]
     alpha = 1.0 - exps
-    temp = torch.cat([torch.ones((exps.shape[0], 1)), exps + 1e-10], -1)
+    temp = torch.cat([torch.ones((exps.shape[0], 1), device=device), exps + 1e-10], -1)
     T = torch.cumprod(temp,-1)[:, :-1]    # [N_rays, N_samples]
     weights = alpha * T    # [N_rays, N_samples]
 
@@ -47,13 +50,17 @@ def raw2outputs(raw, z_vals, rays_d, raw_noise_std=0, white_bkgd=False, pytest=F
 
     depth_map = torch.sum(weights * z_vals, -1)
     acc_map = torch.sum(weights, -1)
-    temp = 1e-10 * torch.ones_like(depth_map)
+    temp = 1e-10 * torch.ones_like(depth_map, device=device)
     disp_map = 1./torch.max(temp, depth_map / torch.sum(weights, -1))
 
     if white_bkgd:
         rgb_map = rgb_map + (1.0-acc_map[...,None])
 
     ## sparsity loss
+
+    rgb_map = rgb_map.cpu()
+    disp_map = rgb_map.cpu()
+    acc_map = rgb_map.cpu()
 
     return rgb_map, disp_map, acc_map, weights, depth_map
     

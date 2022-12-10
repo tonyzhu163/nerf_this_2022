@@ -5,6 +5,7 @@ from rays import generate_rays, sample_coarse, sample_fine
 from raw2outputs import raw2outputs
 from model import run_network
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def render(H, W, K, ray_chunk_sz, rays, near, far, pose=None, **kwargs):
     # section 4 in NERF
@@ -47,12 +48,15 @@ def render(H, W, K, ray_chunk_sz, rays, near, far, pose=None, **kwargs):
     return output, extra
 
 #TODO: remove ray_batch_sz if not used
-def render_ray(rays, N_samples, n_importance=0, perturb=0, ray_batch_sz=1024*32, **kwargs):
+def render_ray(rays, N_samples, n_importance=0, perturb=0, raw_noise_std =0., white_bkgd=False, ray_batch_sz=1024*32, **kwargs):
     n_rays = rays.shape[0]
     rays_o, rays_d = rays[:, 0:3], rays[:, 3:6]
     near, far = rays[:, 6:7], rays[:, 7:8]
 
     z_steps = torch.linspace(0, 1, N_samples)
+
+    z_steps = z_steps.to(device)
+
     z_vals = near * (1 - z_steps) + far * z_steps
     z_vals = z_vals.expand(n_rays, N_samples)
     z_vals_mid = 0.5 * (z_vals[:, :-1] + z_vals[:, 1:])
@@ -61,7 +65,7 @@ def render_ray(rays, N_samples, n_importance=0, perturb=0, ray_batch_sz=1024*32,
 
     # --- NOT DONE ---
     raw = run_network(pts_coarse, rays_d, **kwargs)
-    rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, )
+    rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, raw_noise_std, white_bkgd, False)
 
     if n_importance > 0:
         rgb_map_0, disp_map_0, acc_map_0 = rgb_map, disp_map, acc_map
@@ -69,7 +73,7 @@ def render_ray(rays, N_samples, n_importance=0, perturb=0, ray_batch_sz=1024*32,
 
         # --- NOT DONE ---
         raw = run_network(pts_fine, rays_d, **kwargs)
-        rgb_map, disp_map, acc_map, _, _ = raw2outputs(raw, )
+        rgb_map, disp_map, acc_map, _, _ = (raw, z_vals, rays_d, raw_noise_std, white_bkgd, False)
 
     ret = {'rgb_map': rgb_map, 'disp_map': disp_map, 'acc_map': acc_map}
     if n_importance > 0:

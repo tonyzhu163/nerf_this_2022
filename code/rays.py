@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def generate_rays(H, W, K, pose):
     focal = K[0][0]
@@ -62,7 +63,7 @@ def sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb):
     if perturb > 0.:
         upper = torch.cat([z_vals_mid, z_vals[:, -1:]], -1)
         lower = torch.cat([z_vals[:, :1], z_vals_mid], -1)
-        perturb_rand = perturb * torch.rand(z_vals.shape)
+        perturb_rand = perturb * torch.rand(z_vals.shape, device=device)
         z_vals = lower + (upper - lower) * perturb_rand
 
     pts_coarse_sampled = rays_o.unsqueeze(1) + rays_d.unsqueeze(1) * z_vals.unsqueeze(2)

@@ -85,6 +85,12 @@ def main():
         rgb, disp, acc = render_outputs
         optimizer.zero_grad()
         #rgb: (4096,3), target_rgb (4096, 4)
+
+        # print(rgb.is_cuda)
+        # print(target_rgb.is_cuda)
+
+        # --- loss calculation normally done on cpu ---
+
         loss = torch.mean((rgb - target_rgb) ** 2)  # * mean squared error as tensor
         psnr = mse2psnr(loss)  # * peak signal-to-noise ratio as tensor
 
