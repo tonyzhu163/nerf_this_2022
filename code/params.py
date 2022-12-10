@@ -8,7 +8,7 @@ class ModelParameters:
     Class for keep track of all training parameters and hyperparameters.
     """
 
-    # expname:
+    expname: str
     # basedir: './logs/'
     datadir: list[str]
     object: str
@@ -80,6 +80,12 @@ def get_params():
         type=str,
         default="chair",
         help="chair, drums, ficus, hotdog, lego, materials, mic, or ship",
+    )
+    parser.add_argument(
+        "--expname",
+        type=str,
+        default="untitled",
+        help="handy way to remember the experiment",
     )
     args = parser.parse_args()
     params = ModelParameters(datadir=["data", "nerf_synthetic"], savedir=["logs"], **vars(args))

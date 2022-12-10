@@ -56,8 +56,8 @@ def main():
 
     # Short circuit if only rendering out from trained model
     if params.render_only:
-        #TODO
-        # generate_output()
+        test_imgs = images[i_test]
+        generate_output(params, test_imgs, **render_kwargs_test)
         return
 
     # ------------------------------------------------------------------------ #
@@ -65,7 +65,8 @@ def main():
     # ------------------------------------------------------------------------ #
     
     # batches and creates rays from poses
-    dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode='single')
+    sample_mode = 'all' if params.use_batching else 'single'
+    dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode)
     
     #####testing purpose#######
     params.i_weights = 10
@@ -78,7 +79,6 @@ def main():
         rays, target_rgb = dataloader.get_rays()
         
         #TODO: could probably clean up the function call parameters
-        #TODO: switch render form temp_code to rays.py
         render_outputs, extras = render(
             H, W, K, params.ray_chunk_sz, rays, **render_kwargs_train
         )
@@ -104,7 +104,7 @@ def main():
         if epoch % params.i_weights == 0:
             folder_path = os.path.join("..", *params.savedir, "weights", params.object)
             #  check if dir exists, if not create it
-            if not os.path.exists(folder_path): os.makedirs(folder_path)
+            os.makedirs(folder_path, exist_ok=True)
             file_path = os.path.join(folder_path, '{:06d}.tar'.format(epoch))
             if params.i_embed==1:
                 #TODO: why should this ever be 1?

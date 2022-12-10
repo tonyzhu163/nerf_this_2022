@@ -7,17 +7,16 @@ from model import run_network
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def render(H, W, K, ray_chunk_sz, rays, near, far, pose=None, **kwargs):
+def render(H, W, K, ray_chunk_sz, rays, near, far, **kwargs):
+    
     # section 4 in NERF
 
     # --- Prepare Input ---
-    # test pose is provided for render_path (testing)
-    if pose is not None:
-        rays_d, rays_o = generate_rays(H, W, K, pose)
-    else:
-        rays_d, rays_o = rays
+    # when in testing, rays will represent every pixel of the test image set.
+    # when in training, rays will be a small randomly sampled subset of the training data.
+    rays_d, rays_o = rays
 
-    sh = rays_d.shape
+    sh = rays_d.shape 
     rays_o = rays_o.float()
     rays_d = rays_d.float()
 
