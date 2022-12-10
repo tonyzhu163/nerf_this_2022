@@ -101,12 +101,19 @@ def main():
                 #TODO: why should this ever be 1?
                 pass
             else:
-                torch.save({
-                    'global_step': global_step,
-                    'network_fn_state_dict': render_kwargs_train['network_fn'].state_dict(),
-                    'network_fine_state_dict': render_kwargs_train['network_fine'].state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                }, save_dir)
+                if render_kwargs_train['network_fine'] != None:
+                    torch.save({
+                        'global_step': global_step,
+                        'network_fn_state_dict': render_kwargs_train['network_fn'].state_dict(),
+                        'network_fine_state_dict': render_kwargs_train['network_fine'].state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict(),
+                    }, save_dir)
+                else:
+                    torch.save({
+                        'global_step': global_step,
+                        'network_fn_state_dict': render_kwargs_train['network_fn'].state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict(),
+                    }, save_dir)
                 print(f'Saved checkpoints for step {global_step} at', save_dir)
         '''
         if epoch % params.i_video == 0 and epoch > 0:
