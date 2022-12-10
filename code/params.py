@@ -82,5 +82,5 @@ def get_params():
         help="chair, drums, ficus, hotdog, lego, materials, mic, or ship",
     )
     args = parser.parse_args()
-    params = ModelParameters(datadir=["data", "nerf_synthetic"], savedir=["log"], **vars(args))
+    params = ModelParameters(datadir=["data", "nerf_synthetic"], savedir=["logs"], **vars(args))
     return params

@@ -102,7 +102,10 @@ def main():
         # --------------- Saving Model Output / Weights ---------------------- #
         #TODO
         if epoch % params.i_weights == 0:
-            save_dir = os.path.join("..\\", *params.savedir, "weights", params.object, '{:06d}.tar'.format(epoch))
+            folder_path = os.path.join("..", *params.savedir, "weights", params.object)
+            #  check if dir exists, if not create it
+            if not os.path.exists(folder_path): os.makedirs(folder_path)
+            file_path = os.path.join(folder_path, '{:06d}.tar'.format(epoch))
             if params.i_embed==1:
                 #TODO: why should this ever be 1?
                 pass
@@ -113,14 +116,14 @@ def main():
                         'network_fn_state_dict': render_kwargs_train['network_fn'].state_dict(),
                         'network_fine_state_dict': render_kwargs_train['network_fine'].state_dict(),
                         'optimizer_state_dict': optimizer.state_dict(),
-                    }, save_dir)
+                    }, file_path)
                 else:
                     torch.save({
                         'global_step': global_step,
                         'network_fn_state_dict': render_kwargs_train['network_fn'].state_dict(),
                         'optimizer_state_dict': optimizer.state_dict(),
-                    }, save_dir)
-                print(f'Saved checkpoints for step {global_step} at', save_dir)
+                    }, file_path)
+                print(f'Saved checkpoints for step {global_step} at', file_path)
         '''
         if epoch % params.i_video == 0 and epoch > 0:
             #TODO: unfinished, testing.
