@@ -96,7 +96,7 @@ def main():
         # --------------- Saving Model Output / Weights ---------------------- #
         #TODO
         if epoch % params.i_weights == 0:
-            save_dir = os.path.join(Path.cwd().parent, *params.savedir, "weights", params.object, '{:06d}.tar'.format(epoch))
+            save_dir = os.path.join("..\\", *params.savedir, "weights", params.object, '{:06d}.tar'.format(epoch))
             if params.i_embed==1:
                 #TODO: why should this ever be 1?
                 pass
