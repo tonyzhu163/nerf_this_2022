@@ -12,6 +12,7 @@ class ModelParameters:
     # basedir: './logs/'
     datadir: list[str]
     object: str
+    savedir: list[str]
     epochs: int = 10000
     # pixel_nerf 500 -> 5 min aim for 10000 for now
 
@@ -81,5 +82,5 @@ def get_params():
         help="chair, drums, ficus, hotdog, lego, materials, mic, or ship",
     )
     args = parser.parse_args()
-    params = ModelParameters(datadir=["data", "nerf_synthetic"], **vars(args))
+    params = ModelParameters(datadir=["data", "nerf_synthetic"], savedir=["log"], **vars(args))
     return params

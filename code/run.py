@@ -67,6 +67,11 @@ def main():
     # batches and creates rays from poses
     dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode='single')
     
+    #####testing purpose#######
+    params.i_weights = 10
+    params.epochs = 100
+    ###########################  
+
     for epoch in trange(start + 1, params.epochs + 1):
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #
         
@@ -91,16 +96,28 @@ def main():
         # --------------- Saving Model Output / Weights ---------------------- #
         #TODO
         if epoch % params.i_weights == 0:
-            pass
+            save_dir = os.path.join(Path.cwd().parent, *params.savedir, "weights", params.object, '{:06d}.tar'.format(epoch))
+            if params.i_embed==1:
+                #TODO: why should this ever be 1?
+                pass
+            else:
+                torch.save({
+                    'global_step': global_step,
+                    'network_fn_state_dict': render_kwargs_train['network_fn'].state_dict(),
+                    'network_fine_state_dict': render_kwargs_train['network_fine'].state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                }, save_dir)
+                print(f'Saved checkpoints for step {global_step} at', save_dir)
+        '''
         if epoch % params.i_video == 0 and epoch > 0:
-            #TODO: unfinished
+            #TODO: unfinished, testing.
             with torch.no_grad():
                 rgbs, disps = render_path(render_poses, hwf, K, args.chunk, render_kwargs_test)
             print('Done, saving', rgbs.shape, disps.shape)
             moviebase = os.path.join(basedir, expname, '{}_spiral_{:06d}_'.format(expname, i))
             imageio.mimwrite(moviebase + 'rgb.mp4', to8b(rgbs), fps=30, quality=8)
             imageio.mimwrite(moviebase + 'disp.mp4', to8b(disps / np.max(disps)), fps=30, quality=8)
-
+        '''
         if epoch % params.i_testset == 0 and epoch > 0:
             pass
 
