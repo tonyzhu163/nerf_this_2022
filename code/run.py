@@ -80,7 +80,7 @@ def main():
         #TODO: could probably clean up the function call parameters
         #TODO: switch render form temp_code to rays.py
         render_outputs, extras = render(
-            H, W, K, params.ray_chunk_sz, rays, **render_kwargs_train
+            H, W, K, params.ray_chunk_sz, rays, device, **render_kwargs_train
         )
         rgb, disp, acc = render_outputs
         optimizer.zero_grad()

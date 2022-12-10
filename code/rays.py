@@ -1,8 +1,6 @@
 import torch
 import numpy as np
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 def generate_rays(H, W, K, pose):
     focal = K[0][0]
     
@@ -59,7 +57,7 @@ def h_sampling(bins, weights, n, det=False, tol=1e-5):
     return bins_g[..., 0] + (u-cdf_g[..., 0])/denom * (bins_g[..., 1] - bins_g[..., 0])
 
 
-def sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb):
+def sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb, device):
     if perturb > 0.:
         upper = torch.cat([z_vals_mid, z_vals[:, -1:]], -1)
         lower = torch.cat([z_vals[:, :1], z_vals_mid], -1)

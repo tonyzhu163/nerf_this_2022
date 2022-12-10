@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def raw2outputs(raw, z_vals, rays_d, raw_noise_std=0, white_bkgd=False, pytest=False):
+def raw2outputs(raw, z_vals, rays_d, device,
+                raw_noise_std=0, white_bkgd=False, pytest=False):
     '''
     input
     raw: [N_rays, N_samples, 4], output of the mlp model.
