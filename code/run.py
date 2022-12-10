@@ -57,7 +57,8 @@ def main():
     # Short circuit if only rendering out from trained model
     if params.render_only:
         test_imgs = images[i_test]
-        generate_output(params, test_imgs, **render_kwargs_test)
+        Rs = torch.Tensor(poses[i_test]).to(device)
+        generate_output(H, W, K, Rs, test_imgs, start, params, **render_kwargs_test)
         return
 
     # ------------------------------------------------------------------------ #
@@ -76,7 +77,7 @@ def main():
     for epoch in trange(start + 1, params.epochs + 1):
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #
         
-        rays, target_rgb = dataloader.get_rays()
+        rays, target_rgb = dataloader.get_sample()
         
         #TODO: could probably clean up the function call parameters
         render_outputs, extras = render(

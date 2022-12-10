@@ -3,18 +3,17 @@ import pickle
 import imageio
 import numpy as np
 import torch
-from tqdm import trange
+from tqdm import tqdm
 from params import ModelParameters
 from rays import generate_rays
 from render import render
 
 #TODO: This entire class needs to be refactored
 
-def generate_output(img_dim, cam_geos, test_imgs, start, params: ModelParameters, **render_kwargs) -> None:
+def generate_output(H, W, K, Rs, test_imgs, start, params: ModelParameters, **render_kwargs) -> None:
     print('SET TO RENDER ONLY')
     print('Rendering now...')
     with torch.no_grad():
-        Ks, Rs = cam_geos
         
         #TODO: make this more elegant
         if params.render_test:
@@ -26,7 +25,7 @@ def generate_output(img_dim, cam_geos, test_imgs, start, params: ModelParameters
         
         savedir = params.savedir
         expname = params.expname
-        outputdir = os.path.join(*savedir, 'experiments', expname, \
+        outputdir = os.path.join('..', *savedir, 'experiments', expname, \
             f"{'test' if params.render_test else 'path'}_output_{start}")
         
         # testsavedir = os.path.join(basedir, expname, 'renderonly_{}_{:06d}'.format('test' if params.render_test else 'path', start))
@@ -35,7 +34,7 @@ def generate_output(img_dim, cam_geos, test_imgs, start, params: ModelParameters
         print('test poses shape', Rs.shape)
 
         #TODO: make use of disps and avg_psnr
-        rgbs, *_ = render_path(img_dim, cam_geos, params.ray_chunk_sz, gt_imgs=images, render_factor=1, **render_kwargs)
+        rgbs, *_ = render_path(H, W, K, Rs, params.ray_chunk_sz, gt_imgs=images, render_factor=params.render_factor, **render_kwargs)
         
         #TODO: add:
         # print("Avg PSNR over Test set: ", avg_psnr)
@@ -54,9 +53,8 @@ to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
 
 #TODO: remove ray_chunk_sz, render_factor(depends), save_dir, gt_imgs from prop drilling here
 
-def render_path(img_dim, cam_geos, ray_chunk_sz, gt_imgs=None, render_factor=1, **render_kwargs):
-    H, W = img_dim
-    H, W = H//render_factor, W//render_factor
+def render_path(H, W, K, Rs, ray_chunk_sz, gt_imgs=None, render_factor=1, **render_kwargs):
+    H, W = int(H//render_factor), int(W//render_factor)
 
     rgbs = []
     disps = []
@@ -64,9 +62,10 @@ def render_path(img_dim, cam_geos, ray_chunk_sz, gt_imgs=None, render_factor=1, 
     
 
     
-    for i, (K, R) in trange(enumerate(cam_geos)):
+    for i, R in tqdm(enumerate(Rs)):
         rays = generate_rays(H, W, K, R[:3,:4])
-        rgb, disp, acc, _ = render(H, W, K, ray_chunk_sz, rays, **render_kwargs)
+        (rgb, disp, acc), extras = render(H, W, K, ray_chunk_sz, rays, **render_kwargs)
+        rgb = rgb.reshape((H,W,3))
         rgbs.append(rgb.cpu().numpy())
         disps.append(disp.cpu().numpy())
         if i==0: print(f"render output shapes | rgb: {rgb.shape}, disp: {disp.shape}")

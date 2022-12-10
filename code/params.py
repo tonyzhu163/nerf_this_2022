@@ -51,7 +51,7 @@ class ModelParameters:
     render_only: bool = False
     #* render the test set instead of render_poses path
     render_test: bool = True
-    # render_factor:
+    render_factor: int = 0.5
     precrop_iters: int = 500 #* customize this for each model
     precrop_frac: float = 0.5 #* customize this for each model
     # dataset_type:

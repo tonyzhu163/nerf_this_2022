@@ -63,7 +63,7 @@ class BatchedRayLoader():
         else:
             self.get_rays_fn = self.rays_from_single
 
-    def get_rays(self):
+    def get_sample(self):
         """samples a random set of rays. sample source depends on if set to
         'all' or 'single'. 
         :return: a tuple batch_rays, target_s of shape (ray_batch_sz, 6) and
