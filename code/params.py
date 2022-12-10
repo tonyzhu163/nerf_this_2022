@@ -30,8 +30,8 @@ class ModelParameters:
     ray_chunk_sz: int = 1024 * 8 #* previously chunk
     point_chunk_sz: int = 1024 * 16  #* previously netchunk
     use_batching: bool = False
-    # no_reload:
-    # ft_path:
+    no_reload: bool = True
+    ft_path: str = None
 
     # ----------------------------- rendering options ---------------------------- #
     # * N_samples is number of coarse samples per ray
