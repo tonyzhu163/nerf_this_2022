@@ -32,6 +32,20 @@ def update_lr(params, optimizer, global_step):
 
 def main():
     params = get_params()
+    ########## drum ###########
+    params.use_batching = False
+    params.white_bkgd = True
+    params.lrate_decay = 500
+    params.N_samples = 64
+    params.N_importance = 128
+    params.ray_batch_sz = 1024
+    params.precrop_iters = 500
+    params.precrop_frac = 0.5
+    params.half_res = True
+
+    params.i_weights = 1000
+    params.epochs = 150000
+    ###########################
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -48,9 +62,6 @@ def main():
 
     # TODO: can we attach optimizer to render_kwargs or smth damn
 
-    ######
-    ###params.no_reload = False
-    ######
     render_kwargs_train, render_kwargs_test, start, grad_vars, optimizer = create_nerf(
         params,
         device=device,
@@ -75,11 +86,6 @@ def main():
     sample_mode = 'all' if params.use_batching else 'single'
     dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode, start = start)
     coarse_fine = "coarse" if params.N_importance<=0 else "fine"
-    
-    #####testing purpose#######
-    params.i_weights = 100
-    params.epochs = 50000
-    ###########################
 
     time = "{:%Y_%m_%d_%H_%M_%S}".format(datetime.datetime.now())
     tb_path = Path.cwd().parent / 'logs' / 'tensorboard' / time
@@ -105,6 +111,10 @@ def main():
 
         loss = torch.mean((rgb - target_rgb) ** 2)  # * mean squared error as tensor
         psnr = mse2psnr(loss)  # * peak signal-to-noise ratio as tensor
+        if "rgb0" in extras:
+            loss0 = torch.mean((extras["rgb0"] - target_rgb) ** 2)
+            loss = loss + loss0
+            psnr0 = mse2psnr(loss0)
 
         loss.backward()
         optimizer.step()
@@ -150,9 +160,14 @@ def main():
             pass
 
         if global_step % params.i_print == 0:
-            tqdm.write(
-                f"[TRAIN] Iter: {global_step} Loss: {loss.item()}  PSNR: {psnr.item()}"
-            )
+            if params.N_importance>0:
+                tqdm.write(
+                    f"[TRAIN] Iter: {global_step} Loss: {loss.item()}  Fine PSNR: {psnr.item()} Coase PSNR: {psnr0.item()}" 
+                )
+            else:
+                tqdm.write(
+                    f"[TRAIN] Iter: {global_step} Loss: {loss.item()}  Coase PSNR: {psnr0.item()}" 
+                )
 
 
         # --- DRAW ---
@@ -162,6 +177,8 @@ def main():
             # writer.add_scalar('Loss/test', np.random.random(), global_step)
             writer.add_scalar('PSNR/train', psnr, global_step)
             # writer.add_scalar('PSNR/test', np.random.random(), global_step)
+            if params.N_importance>0:
+                writer.add_scalar("PSNR0/train", psnr0, global_step)
 
 
 if __name__ == "__main__":
