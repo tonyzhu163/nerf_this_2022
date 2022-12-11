@@ -71,12 +71,12 @@ def main():
     
     # batches and creates rays from poses
     sample_mode = 'all' if params.use_batching else 'single'
-    dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode)
+    dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode, global_step=global_step)
     coarse_fine = "coarse" if params.N_importance<=0 else "fine"
     
     #####testing purpose#######
     params.i_weights = 10
-    params.epochs = 10020
+    params.epochs = 20
     ###########################
 
     writer = SummaryWriter()
@@ -105,7 +105,7 @@ def main():
         loss.backward()
         optimizer.step()
 
-        update_lr(params, optimizer, global_step)
+        update_lr(params, optimizer, epoch)
 
         # --------------- Saving Model Output / Weights ---------------------- #
         #TODO

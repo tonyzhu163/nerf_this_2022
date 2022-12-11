@@ -42,14 +42,14 @@ def get_rays_np(H, W, K, c2w):
 #                                Main DataLoader                               #
 # ---------------------------------------------------------------------------- #
 class BatchedRayLoader():
-    def __init__(self, images, poses, i_train, H, W, K, device, params: ModelParameters, sample_mode) -> None:
+    def __init__(self, images, poses, i_train, H, W, K, device, params: ModelParameters, sample_mode, global_step) -> None:
         """
         Arguments
         - sample_mode str: either 'all' or 'single', determines if each iteration samples from across all images or a single image
         """
         self.device = device
         self.sample_mode = sample_mode
-        self.i = 0
+        self.i = global_step
         self.images = images
         self.poses = poses
         self.i_train = i_train
@@ -83,6 +83,7 @@ class BatchedRayLoader():
     def get_coords(self, use_precrop=False):
         H, W = self.H, self.W
         if self.i < self.params.precrop_iters:
+            print("coppppppppppppppp!!!!!!!!!!!")
             dH = int(H//2 * self.params.precrop_frac)
             dW = int(W//2 * self.params.precrop_frac)
             grid = torch.meshgrid(
@@ -91,6 +92,7 @@ class BatchedRayLoader():
                 )
             #* they used self.i == start, which is the "start" index for models
             #* restored from a checkpoint. For now we'll just use 0
+            #* edit: now self.i = start implemented
             if self.i == 0:
                 print(f"[Config] Center cropping of size {2*dH} x {2*dW} is enabled until iter {self.params.precrop_iters}")
         else:
