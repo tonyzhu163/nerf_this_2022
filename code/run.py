@@ -32,20 +32,20 @@ def update_lr(params, optimizer, global_step):
 
 def main():
     params = get_params()
-    ########## drums ##########
-    params.use_batching = False
-    params.white_bkgd = True
-    params.lrate_decay = 500
-    params.N_samples = 64
-    params.N_importance = 128
-    params.ray_batch_sz = 1024
-    params.precrop_iters = 500
-    params.precrop_frac = 0.5
-    params.half_res = True
-
-    params.i_weights = 1000
-    params.epochs = 150000
-    ###########################
+    # ########## drums ##########
+    # params.use_batching = False
+    # params.white_bkgd = True
+    # params.lrate_decay = 500
+    # params.N_samples = 64
+    # params.N_importance = 128
+    # params.ray_batch_sz = 1024
+    # params.precrop_iters = 500
+    # params.precrop_frac = 0.5
+    # params.half_res = True
+    #
+    # params.i_weights = 1000
+    # params.epochs = 150000
+    # ###########################
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -86,14 +86,11 @@ def main():
     sample_mode = 'all' if params.use_batching else 'single'
     dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode, start = start)
     coarse_fine = "coarse" if params.N_importance<=0 else "fine"
-<<<<<<< Updated upstream
-=======
     
     #####testing purpose#######
     params.i_weights = 500
     params.epochs = 50000
     ###########################
->>>>>>> Stashed changes
 
     time = "{:%Y_%m_%d_%H_%M_%S}".format(datetime.datetime.now())
     tb_path = Path.cwd().parent / 'logs' / 'tensorboard' / time
@@ -119,18 +116,12 @@ def main():
 
         loss = img2mse(rgb, target_rgb)  # * mean squared error as tensor
         psnr = mse2psnr(loss)  # * peak signal-to-noise ratio as tensor
-<<<<<<< Updated upstream
+
         if "rgb0" in extras:
             loss0 = torch.mean((extras["rgb0"] - target_rgb) ** 2)
             loss = loss + loss0
             psnr0 = mse2psnr(loss0)
-=======
-        
-        if 'rgb0' in extras:
-            img_loss0 = img2mse(extras['rgb0'], target_rgb)
-            loss = loss + img_loss0
-            # psnr0 = mse2psnr(img_loss0)
->>>>>>> Stashed changes
+
 
         loss.backward()
         optimizer.step()
