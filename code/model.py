@@ -170,29 +170,32 @@ def create_nerf(args, device):
     
     ##########################
 
-    # Load checkpoints
-    if args.ft_path is not None and args.ft_path!='None':
-        ckpts = [args.ft_path]
-    else:
-        ckpts = [os.path.join("..", *savedir, "weights", object, f) for f in sorted(os.listdir(os.path.join("..", *savedir, "weights", object))) if 'tar' in f]
+    if not args.no_reload:
+        sample_mode = 'all' if args.use_batching else 'single'
+        coarse_fine = "coarse" if args.N_importance<=0 else "fine"
+        # Load checkpoints
+        if args.ft_path is not None and args.ft_path!='None':
+            ckpts = [args.ft_path]
+        else:
+            ckpts = [os.path.join("..", *savedir, "weights", coarse_fine, sample_mode, object, f) for f in sorted(os.listdir(os.path.join("..", *savedir, "weights", coarse_fine, sample_mode, object))) if 'tar' in f]
 
-    print('Found ckpts', ckpts)
-    if len(ckpts) > 0 and not args.no_reload:
-        ckpt_path = ckpts[-1]
-        print('Reloading from', ckpt_path)
-        ckpt = torch.load(ckpt_path)
-        
-        start = ckpt['global_step']
-        optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-        
-        # Load model
-        model.load_state_dict(ckpt['network_fn_state_dict'])
-        if model_fine is not None:
-            model_fine.load_state_dict(ckpt['network_fine_state_dict'])
-        '''
-        if args.i_embed==1:
-            embed_fn.load_state_dict(ckpt['embed_fn_state_dict'])
-        '''
+        print('Found ckpts', ckpts)
+        if len(ckpts) > 0:
+            ckpt_path = ckpts[-1]
+            print('Reloading from', ckpt_path)
+            ckpt = torch.load(ckpt_path)
+            
+            start = ckpt['global_step']
+            optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+            
+            # Load model
+            model.load_state_dict(ckpt['network_fn_state_dict'])
+            if model_fine is not None:
+                model_fine.load_state_dict(ckpt['network_fine_state_dict'])
+            '''
+            if args.i_embed==1:
+                embed_fn.load_state_dict(ckpt['embed_fn_state_dict'])
+            '''
 
     ##########################
     

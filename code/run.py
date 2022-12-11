@@ -44,6 +44,10 @@ def main():
     render_poses = torch.Tensor(render_poses).to(device)
 
     # TODO: can we attach optimizer to render_kwargs or smth damn
+
+    ######
+    ###params.no_reload = False
+    ######
     render_kwargs_train, render_kwargs_test, start, grad_vars, optimizer = create_nerf(
         params,
         device=device,
@@ -68,10 +72,11 @@ def main():
     # batches and creates rays from poses
     sample_mode = 'all' if params.use_batching else 'single'
     dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode)
+    coarse_fine = "coarse" if params.N_importance<=0 else "fine"
     
     #####testing purpose#######
-    params.i_weights = 1000
-    params.epochs = 5000
+    params.i_weights = 10
+    params.epochs = 10020
     ###########################
 
     writer = SummaryWriter()
@@ -105,7 +110,7 @@ def main():
         # --------------- Saving Model Output / Weights ---------------------- #
         #TODO
         if epoch % params.i_weights == 0:
-            folder_path = os.path.join("..", *params.savedir, "weights", params.object)
+            folder_path = os.path.join("..", *params.savedir, "weights", coarse_fine, sample_mode, params.object)
             #  check if dir exists, if not create it
             os.makedirs(folder_path, exist_ok=True)
             file_path = os.path.join(folder_path, '{:06d}.tar'.format(epoch))
