@@ -32,7 +32,7 @@ def update_lr(params, optimizer, global_step):
 
 def main():
     params = get_params()
-    ########## drum ###########
+    ########## drums ##########
     params.use_batching = False
     params.white_bkgd = True
     params.lrate_decay = 500
