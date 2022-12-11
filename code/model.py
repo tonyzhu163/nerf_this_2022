@@ -179,7 +179,7 @@ def create_nerf(args, device):
         else:
             ckpts = [os.path.join("..", *savedir, "weights", coarse_fine, sample_mode, object, f) for f in sorted(os.listdir(os.path.join("..", *savedir, "weights", coarse_fine, sample_mode, object))) if 'tar' in f]
 
-        print('Found ckpts', ckpts)
+        print('Found ckpts', [c[-10:] for c in ckpts])
         if len(ckpts) > 0:
             ckpt_path = ckpts[-1]
             print('Reloading from', ckpt_path)

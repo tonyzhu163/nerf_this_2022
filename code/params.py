@@ -31,7 +31,7 @@ class ModelParameters:
     #* ray_chunk_sz might only used during rendering, since chunks are larger than batch size
     ray_chunk_sz: int = 1024 * 8 #* previously chunk
     point_chunk_sz: int = 1024 * 16  #* previously netchunk
-    use_batching: bool = False
+    use_batching: bool = True
     no_reload: bool = True
     ft_path: str = None
 
@@ -68,7 +68,7 @@ class ModelParameters:
     # spherify:
     # llffhold:
     ## logging/saving options
-    i_print: int = 100 # number of epochs per console printout
+    i_print: int = 1000 # number of epochs per console printout
     i_img: int = 500 # number of epochs per tensorboard output
     i_weights: int = 1000 # number of epochs per checkpoint, previously 10000
     i_testset: int = 1000 #
@@ -90,6 +90,11 @@ def get_params():
         type=str,
         default="untitled",
         help="handy way to remember the experiment",
+    )
+    parser.add_argument(
+        "--render_only",
+        action='store_true',
+        help="only render, don't train",
     )
     args = parser.parse_args()
     params = ModelParameters(datadir=["data", "nerf_synthetic"], savedir=["logs"], **vars(args))

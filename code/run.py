@@ -75,7 +75,7 @@ def main():
     if params.render_only:
         test_imgs = images[i_test]
         Rs = torch.Tensor(poses[i_test]).to(device)
-        generate_output(H, W, K, Rs, test_imgs, start, params, **render_kwargs_test)
+        generate_output(H, W, K, Rs, test_imgs, start, device, params, **render_kwargs_test)
         return
 
     # ------------------------------------------------------------------------ #

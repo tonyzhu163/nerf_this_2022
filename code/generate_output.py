@@ -10,7 +10,9 @@ from render import render
 
 #TODO: This entire class needs to be refactored
 
-def generate_output(H, W, K, Rs, test_imgs, start, params: ModelParameters, **render_kwargs) -> None:
+def generate_output(H, W, K, Rs, test_imgs, start, device, params: ModelParameters, **render_kwargs) -> None:
+    Rs, test_imgs = Rs[:100], test_imgs[:100] #TEMP
+    
     print('SET TO RENDER ONLY')
     print('Rendering now...')
     with torch.no_grad():
@@ -34,7 +36,7 @@ def generate_output(H, W, K, Rs, test_imgs, start, params: ModelParameters, **re
         print('test poses shape', Rs.shape)
 
         #TODO: make use of disps and avg_psnr
-        rgbs, *_ = render_path(H, W, K, Rs, params.ray_chunk_sz, gt_imgs=images, render_factor=params.render_factor, **render_kwargs)
+        rgbs, *_ = render_path(H, W, K, Rs, params.ray_chunk_sz, device, gt_imgs=images, render_factor=params.render_factor, **render_kwargs)
         
         #TODO: add:
         # print("Avg PSNR over Test set: ", avg_psnr)
@@ -43,7 +45,12 @@ def generate_output(H, W, K, Rs, test_imgs, start, params: ModelParameters, **re
         
         
         print('Done rendering', outputdir)
-        imageio.mimwrite(os.path.join(outputdir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
+        settings = {
+            'macro_block_size': None,
+            'fps':30,
+            'quality':8
+        }
+        imageio.mimwrite(os.path.join(outputdir, 'video.mp4'), to8b(rgbs), **settings)
         return
 
 
@@ -53,7 +60,7 @@ to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
 
 #TODO: remove ray_chunk_sz, render_factor(depends), save_dir, gt_imgs from prop drilling here
 
-def render_path(H, W, K, Rs, ray_chunk_sz, gt_imgs=None, render_factor=1, **render_kwargs):
+def render_path(H, W, K, Rs, ray_chunk_sz, device, gt_imgs=None, render_factor=1, **render_kwargs):
     H, W = int(H//render_factor), int(W//render_factor)
 
     rgbs = []
@@ -61,10 +68,10 @@ def render_path(H, W, K, Rs, ray_chunk_sz, gt_imgs=None, render_factor=1, **rend
     psnrs = []
     
 
-    
+    print(f"generating rgbs for {Rs.shape[0]} poses")
     for i, R in tqdm(enumerate(Rs)):
         rays = generate_rays(H, W, K, R[:3,:4])
-        (rgb, disp, acc), extras = render(H, W, K, ray_chunk_sz, rays, **render_kwargs)
+        (rgb, disp, acc), extras = render(H, W, K, ray_chunk_sz, rays, device, **render_kwargs)
         rgb = rgb.reshape((H,W,3))
         rgbs.append(rgb.cpu().numpy())
         disps.append(disp.cpu().numpy())
