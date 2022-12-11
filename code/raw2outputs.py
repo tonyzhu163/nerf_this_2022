@@ -40,6 +40,9 @@ def raw2outputs(raw, z_vals, rays_d, device,
             noise = torch.Tensor(noise)
     density = F.relu(density + noise)    # [N_rays, N_samples]
 
+    # print(density.shape)
+    # print(dists.shape)
+
     exps = torch.exp(-density*dists)    # [N_rays, N_samples]
     alpha = 1.0 - exps
     temp = torch.cat([torch.ones((exps.shape[0], 1), device=device), exps + 1e-10], -1)

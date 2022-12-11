@@ -71,12 +71,12 @@ def render_ray(rays, N_samples, device,
 
     if N_importance > 0:
         rgb_map_0, disp_map_0, acc_map_0 = rgb_map, disp_map, acc_map
-        pts_fine, z_samples = sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, N_importance, perturb, device)
+        pts_fine, z_samples, z_vals = sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, N_importance, perturb, device)
 
         run_fn = network_fn if network_fine is None else network_fine
 
-        if run_fn == network_fine:
-            print('Working as intended')
+        # if run_fn == network_fine:
+            # print('Working as intended')
 
         raw = run_network(pts_fine, rays_d, run_fn, **kwargs)
         rgb_map, disp_map, acc_map, _, _ = raw2outputs(raw, z_vals, rays_d, device,

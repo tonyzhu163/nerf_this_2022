@@ -1,9 +1,11 @@
 import os
 from pathlib import Path
+import datetime
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm, trange
+
 
 from load_blender import load_blender_data
 from render import render
@@ -79,7 +81,8 @@ def main():
     params.epochs = 50000
     ###########################
 
-    tb_path = Path.cwd().parent / 'logs' / 'tensorboard'
+    tb_path = Path.cwd().parent / 'logs' / 'tensorboard' / \
+              f'{datetime.datetime.now().isoformat(sep="_", timespec="seconds")}'
     writer = SummaryWriter(log_dir=f'{tb_path}')
 
     for global_step in trange(start + 1, params.epochs + 1):

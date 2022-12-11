@@ -75,7 +75,7 @@ def sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, n_importance, pertu
     z_vals, _ = torch.sort(torch.cat([z_vals, z_samples], -1), -1)
     pts_fine_sampled = rays_o.unsqueeze(1) + rays_d.unsqueeze(1) * z_vals.unsqueeze(2)
 
-    return pts_fine_sampled, z_samples
+    return pts_fine_sampled, z_samples, z_vals
 
 
 
