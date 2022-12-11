@@ -8,6 +8,8 @@ from params import ModelParameters
 from rays import generate_rays
 from render import render
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 #TODO: This entire class needs to be refactored
 
 def generate_output(H, W, K, Rs, test_imgs, start, device, params: ModelParameters, **render_kwargs) -> None:

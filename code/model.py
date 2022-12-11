@@ -45,6 +45,10 @@ class NeRF(nn.Module):
 
     def forward(self, x):
         posi_encode, dir_encode = torch.split(x, [self.posi_len, self.dir_len], dim=-1)
+
+        # print(dir_encode[0,:])
+        # print(dir_encode[64, :])
+
         h = posi_encode
         for i,l in enumerate(self.hidden_layers):
             h = self.hidden_layers[i](h)

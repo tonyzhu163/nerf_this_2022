@@ -160,9 +160,8 @@ class BatchedRayLoader():
         # rays_o, rays_d = get_rays(*cam_geo) # (H,W,3), (H,W,3)
         rays_d, rays_o = generate_rays(*cam_geo)
 
-
-
         use_precrop = self.i < self.params.precrop_iters
+        ## 200 * 200 = 40000
         # TODO: REFACTOR
         coords = self.get_coords(use_precrop)
         # choose a random selection of rays of size ray_batch_sz
@@ -177,6 +176,11 @@ class BatchedRayLoader():
         # --- RAYS ARE FLAT, IMAGES ARE 2D + Channel ---
         rays_o = rays_o[sel_c_flat, :]  # (ray_batch_sz, 3)
         rays_d = rays_d[sel_c_flat, :]  # (ray_batch_sz, 3)
+
+        torch.set_printoptions(profile="full")
+        print(rays_d)
+        torch.set_printoptions(profile="default")
+
         # stack origin and direction together
         # TODO: do this first lmfao
         # batch_rays = torch.stack([rays_o, rays_d], 0) # (ray_batch_sz, 6)

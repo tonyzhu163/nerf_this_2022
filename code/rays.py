@@ -27,6 +27,7 @@ def generate_rays(H, W, K, pose):
 
     # normalized direction and origin
     # both [H*W, 3]
+
     return ray_d, ray_o
 
 
@@ -70,7 +71,7 @@ def sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb, device):
 
     pts_coarse_sampled = rays_o.unsqueeze(1) + rays_d.unsqueeze(1) * z_vals.unsqueeze(2)
 
-    return pts_coarse_sampled
+    return pts_coarse_sampled, z_vals
 
 
 def sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, n_importance, perturb, device):

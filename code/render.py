@@ -63,23 +63,20 @@ def render_ray(rays, N_samples, device,
     z_vals = z_vals.expand(n_rays, N_samples)
     z_vals_mid = 0.5 * (z_vals[:, :-1] + z_vals[:, 1:])
 
-    pts_coarse = sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb, device)
+    pts_coarse, perturbed_values = sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb, device)
 
     raw = run_network(pts_coarse, rays_d, network_fn, **kwargs)
-    rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, device,
+    rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, perturbed_values, rays_d, device,
                                                                  raw_noise_std, white_bkgd, False)
 
     if N_importance > 0:
         rgb_map_0, disp_map_0, acc_map_0 = rgb_map, disp_map, acc_map
-        pts_fine, z_samples, z_vals = sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, N_importance, perturb, device)
+        pts_fine, z_samples, hiearchical_values = sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, N_importance, perturb, device)
 
         run_fn = network_fn if network_fine is None else network_fine
 
-        # if run_fn == network_fine:
-            # print('Working as intended')
-
         raw = run_network(pts_fine, rays_d, run_fn, **kwargs)
-        rgb_map, disp_map, acc_map, _, _ = raw2outputs(raw, z_vals, rays_d, device,
+        rgb_map, disp_map, acc_map, _, _ = raw2outputs(raw, hiearchical_values, rays_d, device,
                                                        raw_noise_std, white_bkgd, False)
 
     ret = {'rgb_map': rgb_map, 'disp_map': disp_map, 'acc_map': acc_map}

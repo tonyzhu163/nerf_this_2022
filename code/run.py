@@ -32,20 +32,14 @@ def update_lr(params, optimizer, global_step):
 
 def main():
     params = get_params()
-    # ########## drums ##########
-    # params.use_batching = False
-    # params.white_bkgd = True
-    # params.lrate_decay = 500
-    # params.N_samples = 64
-    # params.N_importance = 128
-    # params.ray_batch_sz = 1024
-    # params.precrop_iters = 500
-    # params.precrop_frac = 0.5
-    # params.half_res = True
-    #
-    # params.i_weights = 1000
-    # params.epochs = 150000
-    # ###########################
+
+    #####testing purpose#######
+    params.i_weights = 500
+    params.epochs = 2001
+    params.i_video = 2000
+    params.render_factor = 4
+    # params.render_only = True
+    ###########################
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -86,11 +80,6 @@ def main():
     sample_mode = 'all' if params.use_batching else 'single'
     dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode, start = start)
     coarse_fine = "coarse" if params.N_importance<=0 else "fine"
-    
-    #####testing purpose#######
-    params.i_weights = 500
-    params.epochs = 50000
-    ###########################
 
     time = "{:%Y_%m_%d_%H_%M_%S}".format(datetime.datetime.now())
     tb_path = Path.cwd().parent / 'logs' / 'tensorboard' / time
