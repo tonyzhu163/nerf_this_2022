@@ -75,8 +75,8 @@ def main():
     coarse_fine = "coarse" if params.N_importance<=0 else "fine"
     
     #####testing purpose#######
-    params.i_weights = 10
-    params.epochs = 10020
+    params.i_weights = 100
+    params.epochs = 50000
     ###########################
 
     writer = SummaryWriter()
