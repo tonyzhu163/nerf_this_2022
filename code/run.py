@@ -52,7 +52,6 @@ def main():
         params,
         device=device,
     )
-    global_step = start
 
     for kwargs in [render_kwargs_train, render_kwargs_test]:
         kwargs["near"] = near
@@ -71,17 +70,17 @@ def main():
     
     # batches and creates rays from poses
     sample_mode = 'all' if params.use_batching else 'single'
-    dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode, global_step=global_step)
+    dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode, start = start)
     coarse_fine = "coarse" if params.N_importance<=0 else "fine"
     
     #####testing purpose#######
-    params.i_weights = 10
-    params.epochs = 20
+    params.i_weights = 100
+    params.epochs = 50000
     ###########################
 
     writer = SummaryWriter()
 
-    for epoch in trange(start + 1, params.epochs + 1):
+    for global_step in trange(start + 1, params.epochs + 1):
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #
         
         rays, target_rgb = dataloader.get_sample()
@@ -105,15 +104,15 @@ def main():
         loss.backward()
         optimizer.step()
 
-        update_lr(params, optimizer, epoch)
+        update_lr(params, optimizer, global_step)
 
         # --------------- Saving Model Output / Weights ---------------------- #
         #TODO
-        if epoch % params.i_weights == 0:
+        if global_step % params.i_weights == 0:
             folder_path = os.path.join("..", *params.savedir, "weights", coarse_fine, sample_mode, params.object)
             #  check if dir exists, if not create it
             os.makedirs(folder_path, exist_ok=True)
-            file_path = os.path.join(folder_path, '{:06d}.tar'.format(epoch))
+            file_path = os.path.join(folder_path, '{:06d}.tar'.format(global_step))
             if params.i_embed==1:
                 #TODO: why should this ever be 1?
                 pass
@@ -131,9 +130,9 @@ def main():
                         'network_fn_state_dict': render_kwargs_train['network_fn'].state_dict(),
                         'optimizer_state_dict': optimizer.state_dict(),
                     }, file_path)
-                print(f'Saved checkpoints for step {global_step+1} at', file_path)
+                print(f'Saved checkpoints for step {global_step} at', file_path)
         '''
-        if epoch % params.i_video == 0 and epoch > 0:
+        if global_step % params.i_video == 0 and global_step > 0:
             #TODO: unfinished, testing.
             with torch.no_grad():
                 rgbs, disps = render_path(render_poses, hwf, K, args.chunk, render_kwargs_test)
@@ -142,23 +141,22 @@ def main():
             imageio.mimwrite(moviebase + 'rgb.mp4', to8b(rgbs), fps=30, quality=8)
             imageio.mimwrite(moviebase + 'disp.mp4', to8b(disps / np.max(disps)), fps=30, quality=8)
         '''
-        if epoch % params.i_testset == 0 and epoch > 0:
+        if global_step % params.i_testset == 0 and global_step > 0:
             pass
 
-        if epoch % params.i_print == 0:
+        if global_step % params.i_print == 0:
             tqdm.write(
-                f"[TRAIN] Iter: {epoch} Loss: {loss.item()}  PSNR: {psnr.item()}"
+                f"[TRAIN] Iter: {global_step} Loss: {loss.item()}  PSNR: {psnr.item()}"
             )
-        global_step += 1
 
 
         # --- DRAW ---
 
         if params.tensorboard:
-            writer.add_scalar('Loss/train', loss, epoch)
-            # writer.add_scalar('Loss/test', np.random.random(), epoch)
-            writer.add_scalar('PSNR/train', psnr, epoch)
-            # writer.add_scalar('PSNR/test', np.random.random(), epoch)
+            writer.add_scalar('Loss/train', loss, global_step)
+            # writer.add_scalar('Loss/test', np.random.random(), global_step)
+            writer.add_scalar('PSNR/train', psnr, global_step)
+            # writer.add_scalar('PSNR/test', np.random.random(), global_step)
 
 
 if __name__ == "__main__":

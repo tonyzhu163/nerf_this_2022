@@ -49,6 +49,7 @@ def render(H, W, K, ray_chunk_sz, rays, device, near, far, **kwargs):
 
 #TODO: remove ray_batch_sz if not used
 def render_ray(rays, N_samples, device,
+                network_fn, network_fine=None,
                n_importance=0, perturb=0, raw_noise_std =0., white_bkgd=False, **kwargs):
     n_rays = rays.shape[0]
     rays_o, rays_d = rays[:, 0:3], rays[:, 3:6]
@@ -64,7 +65,7 @@ def render_ray(rays, N_samples, device,
 
     pts_coarse = sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb, device)
 
-    raw = run_network(pts_coarse, rays_d, **kwargs)
+    raw = run_network(pts_coarse, rays_d, network_fn, **kwargs)
     rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, device,
                                                                  raw_noise_std, white_bkgd, False)
 
@@ -72,8 +73,8 @@ def render_ray(rays, N_samples, device,
         rgb_map_0, disp_map_0, acc_map_0 = rgb_map, disp_map, acc_map
         pts_fine, z_samples = sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, n_importance, perturb)
 
-
-        raw = run_network(pts_fine, rays_d, **kwargs)
+        run_fn = network_fn if network_fine is None else network_fine
+        raw = run_network(pts_fine, rays_d, run_fn, **kwargs)
         rgb_map, disp_map, acc_map, _, _ = raw2outputs(raw, z_vals, rays_d, device,
                                                        raw_noise_std, white_bkgd, False)
 

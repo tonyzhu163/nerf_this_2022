@@ -21,9 +21,11 @@ class ModelParameters:
     netdepth_fine: int = 8
     netwidth_fine: int = 256
     # * ray_batch_sz is the number of rays in the batch
-    ray_batch_sz: int = 32 * 32 * 4 #* previously N_rand
+    # ray_batch_sz: int = 32 * 32 * 4 #* previously N_rand
+    ray_batch_sz: int = 1024 #* previously N_rand
     lrate: float = 5e-4
-    lrate_decay: int = 250
+    # lrate_decay: int = 250
+    lrate_decay: int = 500
     # render_batch further into mini-batches to avoid OOM during rendering
     # render_batch_sz
     #* ray_chunk_sz might only used during rendering, since chunks are larger than batch size
@@ -37,7 +39,7 @@ class ModelParameters:
     # * N_samples is number of coarse samples per ray
     N_samples: int = 64
     # * N_importance if >= 1, increases the number of bins in the fine sample (only called on the fine NERF once)
-    N_importance: int = 0 #TEMP, change this to 1 when coarse is working
+    N_importance: int = 128 #TEMP, change this to 1 when coarse is working
     perturb: int = 1.0
     # use_viewdirs: I think we assume this is always positive
     #* set 1 for hashed embedding, 0 for default positional encoding, 2 for spherical
