@@ -8,7 +8,7 @@ from model import run_network
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def render(H, W, K, ray_chunk_sz, rays, device, near, far, **kwargs):
-    
+
     # section 4 in NERF
 
     # --- Prepare Input ---
@@ -50,7 +50,7 @@ def render(H, W, K, ray_chunk_sz, rays, device, near, far, **kwargs):
 #TODO: remove ray_batch_sz if not used
 def render_ray(rays, N_samples, device,
                 network_fn, network_fine=None,
-               n_importance=0, perturb=0, raw_noise_std =0., white_bkgd=False, **kwargs):
+               N_importance=0, perturb=0, raw_noise_std =0., white_bkgd=False, **kwargs):
     n_rays = rays.shape[0]
     rays_o, rays_d = rays[:, 0:3], rays[:, 3:6]
     near, far = rays[:, 6:7], rays[:, 7:8]
@@ -69,17 +69,21 @@ def render_ray(rays, N_samples, device,
     rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, device,
                                                                  raw_noise_std, white_bkgd, False)
 
-    if n_importance > 0:
+    if N_importance > 0:
         rgb_map_0, disp_map_0, acc_map_0 = rgb_map, disp_map, acc_map
-        pts_fine, z_samples = sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, n_importance, perturb)
+        pts_fine, z_samples = sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, N_importance, perturb, device)
 
         run_fn = network_fn if network_fine is None else network_fine
+
+        if run_fn == network_fine:
+            print('Working as intended')
+
         raw = run_network(pts_fine, rays_d, run_fn, **kwargs)
         rgb_map, disp_map, acc_map, _, _ = raw2outputs(raw, z_vals, rays_d, device,
                                                        raw_noise_std, white_bkgd, False)
 
     ret = {'rgb_map': rgb_map, 'disp_map': disp_map, 'acc_map': acc_map}
-    if n_importance > 0:
+    if N_importance > 0:
         ret['rgb0'] = rgb_map_0
         ret['disp0'] = disp_map_0
         ret['acc0'] = acc_map_0

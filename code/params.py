@@ -53,14 +53,14 @@ class ModelParameters:
     render_only: bool = False
     #* render the test set instead of render_poses path
     render_test: bool = True
-    render_factor: int = 0.5
+    render_factor: int = 4
     precrop_iters: int = 500 #* customize this for each model
     precrop_frac: float = 0.5 #* customize this for each model
     # dataset_type:
     # testskip:
     # shape:
     white_bkgd: bool = True  # ? True?
-    half_res: bool = False  # ? True?
+    half_res: bool = True  # ? True?
     ## llff flags
     # factor:
     # no_ndc:

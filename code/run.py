@@ -37,7 +37,8 @@ def main():
     #TODO: right now the images outputted are 3 channel: RGB. However blender
     #TODO: images actually have a opacity layer. We could improve the model by
     #TODO: comparing density output with opacity from source image
-    images, poses, render_poses, [H, W, F, K], near, far, i_split = load_blender_data(data_dir, params.white_bkgd)
+    images, poses, render_poses, [H, W, F, K], near, far, i_split = \
+        load_blender_data(data_dir, params.half_res, params.white_bkgd)
     print("Loaded blender", images.shape, render_poses.shape, H, W, F, K, data_dir)
     i_train, i_val, i_test = i_split
 
@@ -78,7 +79,8 @@ def main():
     params.epochs = 50000
     ###########################
 
-    writer = SummaryWriter()
+    tb_path = Path.cwd().parent / 'logs' / 'tensorboard'
+    writer = SummaryWriter(log_dir=f'{tb_path}')
 
     for global_step in trange(start + 1, params.epochs + 1):
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #

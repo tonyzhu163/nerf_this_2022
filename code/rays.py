@@ -27,7 +27,7 @@ def generate_rays(H, W, K, pose):
     return ray_d, ray_o
 
 
-def h_sampling(bins, weights, n, det=False, tol=1e-5):
+def h_sampling(bins, weights, n, device, det=False, tol=1e-5):
     # section 5.2 in NERF
     n_rays, n_samples = weights.shape
     weights = weights + tol
@@ -41,6 +41,7 @@ def h_sampling(bins, weights, n, det=False, tol=1e-5):
     else:
         u = torch.rand(n_rays, n)
     u = u.contiguous()
+    u = u.to(device)
 
     # invert CDF by finding domain for each value
     idx = torch.searchsorted(cdf, u, right=True)
@@ -69,8 +70,8 @@ def sample_coarse(z_vals, z_vals_mid, rays_o, rays_d, perturb, device):
     return pts_coarse_sampled
 
 
-def sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, n_importance, perturb):
-    z_samples = h_sampling(z_vals_mid, weights[:, 1:-1], n_importance, det=(perturb == 0)).detach()
+def sample_fine(z_vals, z_vals_mid, rays_o, rays_d, weights, n_importance, perturb, device):
+    z_samples = h_sampling(z_vals_mid, weights[:, 1:-1], n_importance, device, det=(perturb == 0)).detach()
     z_vals, _ = torch.sort(torch.cat([z_vals, z_samples], -1), -1)
     pts_fine_sampled = rays_o.unsqueeze(1) + rays_d.unsqueeze(1) * z_vals.unsqueeze(2)
 
