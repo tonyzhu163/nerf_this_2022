@@ -81,8 +81,10 @@ def main():
     params.epochs = 50000
     ###########################
 
-    tb_path = Path.cwd().parent / 'logs' / 'tensorboard' / \
-              f'{datetime.datetime.now().isoformat(sep="_", timespec="seconds")}'
+    time = datetime.datetime.now().isoformat(sep="_", timespec="seconds")
+    clean_time = [s for s in time if s.isalnum()]
+
+    tb_path = Path.cwd().parent / 'logs' / 'tensorboard' / clean_time
     writer = SummaryWriter(log_dir=f'{tb_path}')
 
     for global_step in trange(start + 1, params.epochs + 1):
