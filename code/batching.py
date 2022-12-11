@@ -28,6 +28,7 @@ def get_rays(H, W, K, c2w):
     # Translate camera frame's origin to the world frame. It is the origin of all rays.
     rays_o = c2w[:3,-1].expand(rays_d.shape)
     return rays_o, rays_d
+
 #TODO: REFACTOR
 def get_rays_np(H, W, K, c2w):
     i, j = np.meshgrid(np.arange(W, dtype=np.float32), np.arange(H, dtype=np.float32), indexing='xy')
@@ -59,12 +60,17 @@ class BatchedRayLoader():
         self.params = params
         assert sample_mode in ['all', 'single']
         if sample_mode == 'all':
+            self.all_rays = self.preload_all_rays()
+            self.current_batch_i = 0
             self.get_rays_fn = self.rays_from_all
         else:
+            self.all_rays = None # not used if single sampling
+            self.current_batch_i = None # not used if single sampling
             self.get_rays_fn = self.rays_from_single
 
     def get_sample(self):
-        """samples a random set of rays. sample source depends on if set to
+        """
+        samples a random set of rays. sample source depends on if set to
         'all' or 'single'. 
         :return: a tuple batch_rays, target_s of shape (ray_batch_sz, 6) and
         (ray_batch_sz, 3)
@@ -76,8 +82,41 @@ class BatchedRayLoader():
         return batch_rays, target_s
         
     #TODO: implement
+    
+    def preload_all_rays(self):
+        # For random ray batching
+        print('get rays')
+        rays = np.stack([get_rays_np(self.H, self.W, self.K, p) for p in self.poses[:,:3,:4]], 0) # [N, ro+rd, H, W, 3]
+        print('done, concats')
+        rays_rgb = np.concatenate([rays, self.images[:,None]], 1) # [N, ro+rd+rgb, H, W, 3]
+        rays_rgb = np.transpose(rays_rgb, [0,2,3,1,4]) # [N, H, W, ro+rd+rgb, 3]
+        rays_rgb = np.stack([rays_rgb[i] for i in self.i_train], 0) # train images only
+        rays_rgb = np.reshape(rays_rgb, [-1,3,3]) # [(N-1)*H*W, ro+rd+rgb, 3]
+        rays_rgb = rays_rgb.astype(np.float32)
+        print('shuffle rays')
+        np.random.shuffle(rays_rgb)
+
+        print('done')
+        
+        # Move training data to GPU
+        rays_rgb = torch.Tensor(rays_rgb).to(device)
+        return rays_rgb
+    
+    #TODO: refactor further
     def rays_from_all(self):
-        return None, None
+        ray_batch_sz = self.params.ray_batch_sz
+        # Random over all images
+        batch = self.all_rays[self.current_batch_i:self.current_batch_i+ray_batch_sz] # [B, 2+1, 3*?]
+        batch = torch.transpose(batch, 0, 1)
+        batch_rays, target_s = batch[:2], batch[2]
+
+        self.current_batch_i += ray_batch_sz
+        if self.current_batch_i >= self.all_rays.shape[0]:
+            print("Shuffle data after an epoch!")
+            rand_idx = torch.randperm(self.all_rays.shape[0])
+            self.all_rays = self.all_rays[rand_idx]
+            self.current_batch_i = 0
+        return batch_rays, target_s
     
     
     def get_coords(self, use_precrop=False):
