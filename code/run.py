@@ -179,7 +179,7 @@ def main():
 
         # --- DRAW ---
 
-        if params.tensorboard and global_step % params.i_tensorboard == 0:
+        if params.tensorboard:
             writer.add_scalar('Loss/train', loss, global_step)
             # writer.add_scalar('Loss/test', np.random.random(), global_step)
             writer.add_scalar('PSNR/train', psnr, global_step)
