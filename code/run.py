@@ -86,6 +86,14 @@ def main():
     sample_mode = 'all' if params.use_batching else 'single'
     dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode, start = start)
     coarse_fine = "coarse" if params.N_importance<=0 else "fine"
+<<<<<<< Updated upstream
+=======
+    
+    #####testing purpose#######
+    params.i_weights = 500
+    params.epochs = 50000
+    ###########################
+>>>>>>> Stashed changes
 
     time = "{:%Y_%m_%d_%H_%M_%S}".format(datetime.datetime.now())
     tb_path = Path.cwd().parent / 'logs' / 'tensorboard' / time
@@ -109,12 +117,20 @@ def main():
 
         # --- loss calculation normally done on cpu ---
 
-        loss = torch.mean((rgb - target_rgb) ** 2)  # * mean squared error as tensor
+        loss = img2mse(rgb, target_rgb)  # * mean squared error as tensor
         psnr = mse2psnr(loss)  # * peak signal-to-noise ratio as tensor
+<<<<<<< Updated upstream
         if "rgb0" in extras:
             loss0 = torch.mean((extras["rgb0"] - target_rgb) ** 2)
             loss = loss + loss0
             psnr0 = mse2psnr(loss0)
+=======
+        
+        if 'rgb0' in extras:
+            img_loss0 = img2mse(extras['rgb0'], target_rgb)
+            loss = loss + img_loss0
+            # psnr0 = mse2psnr(img_loss0)
+>>>>>>> Stashed changes
 
         loss.backward()
         optimizer.step()
@@ -172,7 +188,7 @@ def main():
 
         # --- DRAW ---
 
-        if params.tensorboard:
+        if params.tensorboard and global_step % params.i_tensorboard == 0:
             writer.add_scalar('Loss/train', loss, global_step)
             # writer.add_scalar('Loss/test', np.random.random(), global_step)
             writer.add_scalar('PSNR/train', psnr, global_step)

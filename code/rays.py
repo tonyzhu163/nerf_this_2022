@@ -1,12 +1,15 @@
 import torch
 import numpy as np
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def generate_rays(H, W, K, pose):
     focal = K[0][0]
-    
     x, y = torch.meshgrid(torch.linspace(0, W-1, W), torch.linspace(0, H-1, H))
     x, y = x.t(), y.t()
 
+    x = x.to(device)
+    y = y.to(device)
     # equation from https://www.scratchapixel.com/lessons/3d-basic-rendering
     # /ray-tracing-generating-camera-rays/generating-camera-rays
     # may or may not need 0.5 shift

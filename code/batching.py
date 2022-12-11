@@ -4,6 +4,8 @@ Batching wrapper for rays
 import numpy as np
 import torch
 from params import ModelParameters
+
+from rays import generate_rays
 # ---------------------------------------------------------------------------- #
 #                             Ray Helper Functions                             #
 # ---------------------------------------------------------------------------- #
@@ -155,22 +157,33 @@ class BatchedRayLoader():
         
         # if self.params.ray_batch_sz: #? why
         # get rays origin and direction from images
-        rays_o, rays_d = get_rays(*cam_geo) # (H,W,3), (H,W,3)
-        
+        # rays_o, rays_d = get_rays(*cam_geo) # (H,W,3), (H,W,3)
+        rays_d, rays_o = generate_rays(*cam_geo)
+
+
+
         use_precrop = self.i < self.params.precrop_iters
         # TODO: REFACTOR
         coords = self.get_coords(use_precrop)
         # choose a random selection of rays of size ray_batch_sz
         select_inds = np.random.choice(coords.shape[0], size=[self.params.ray_batch_sz], replace=False)  # (ray_batch_sz,)
         # get those coords
-        select_coords = coords[select_inds].long()  # (ray_batch_sz, 2)
+        # select_coords = coords[select_inds].long()  # (ray_batch_sz, 2)
         # select from origin and direction via coords
-        rays_o = rays_o[select_coords[:, 0], select_coords[:, 1]]  # (ray_batch_sz, 3)
-        rays_d = rays_d[select_coords[:, 0], select_coords[:, 1]]  # (ray_batch_sz, 3)
+
+        sel_c = coords[select_inds, :].long()
+        sel_c_flat = torch.Tensor([x*self.W + y for x, y in sel_c]).long()
+
+        # --- RAYS ARE FLAT, IMAGES ARE 2D + Channel ---
+        rays_o = rays_o[sel_c_flat, :]  # (ray_batch_sz, 3)
+        rays_d = rays_d[sel_c_flat, :]  # (ray_batch_sz, 3)
         # stack origin and direction together
         # TODO: do this first lmfao
-        batch_rays = torch.stack([rays_o, rays_d], 0) # (ray_batch_sz, 6)
+        # batch_rays = torch.stack([rays_o, rays_d], 0) # (ray_batch_sz, 6)
+
+        # --- IMPORTANT, D BEFORE O ---
+        batch_rays = torch.stack([rays_d, rays_o], 0)
         # target rgb color
-        target_s = target_image[select_coords[:, 0], select_coords[:, 1]]  # (ray_batch_sz, 3)
+        target_s = target_image[sel_c[:, 0], sel_c[:, 1]]  # (ray_batch_sz, 3)
         return batch_rays, target_s
         
