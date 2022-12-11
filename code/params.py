@@ -24,7 +24,8 @@ class ModelParameters:
     # ray_batch_sz: int = 32 * 32 * 4 #* previously N_rand
     ray_batch_sz: int = 1024 #* previously N_rand
     lrate: float = 5e-4
-    lrate_decay: int = 250
+    # lrate_decay: int = 250
+    lrate_decay: int = 500
     # render_batch further into mini-batches to avoid OOM during rendering
     # render_batch_sz
     #* ray_chunk_sz might only used during rendering, since chunks are larger than batch size
