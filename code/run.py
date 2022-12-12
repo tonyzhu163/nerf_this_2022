@@ -36,9 +36,13 @@ def main():
     #####testing purpose#######
     params.i_weights = 500
     params.epochs = 2001
-    params.i_video = 2000
-    params.render_factor = 4
+    # params.i_video = 2000
+    params.i_print = 100
+    params.render_factor = 0
     # params.render_only = True
+    params.use_batching = False
+    params.no_reload = False
+
     ###########################
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -162,13 +166,12 @@ def main():
                 )
             else:
                 tqdm.write(
-                    f"[TRAIN] Iter: {global_step} Loss: {loss.item()}  Coase PSNR: {psnr0.item()}" 
+                    f"[TRAIN] Iter: {global_step} Loss: {loss.item()}  Coase PSNR: {psnr.item()}"
                 )
-
 
         # --- DRAW ---
 
-        if params.tensorboard:
+        if params.tensorboard and global_step % params.i_tensorboard == 0:
             writer.add_scalar('Loss/train', loss, global_step)
             # writer.add_scalar('Loss/test', np.random.random(), global_step)
             writer.add_scalar('PSNR/train', psnr, global_step)

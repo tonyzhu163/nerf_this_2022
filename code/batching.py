@@ -9,27 +9,22 @@ from rays import generate_rays
 # ---------------------------------------------------------------------------- #
 #                             Ray Helper Functions                             #
 # ---------------------------------------------------------------------------- #
-#TODO: REFACTOR
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def get_rays(H, W, K, c2w):
-    i, j = torch.meshgrid(torch.linspace(0, W-1, W), torch.linspace(0, H-1, H))  # pytorch's meshgrid has indexing='ij'
-    i = i.t()
-    j = j.t()
-    i = i.to(device)
-    j = j.to(device)
-
-    # print(i.is_cuda)
-    # print(K.is_cuda)
-    # print(c2w.is_cuda)
-
-    dirs = torch.stack([(i-K[0][2])/K[0][0], -(j-K[1][2])/K[1][1], -torch.ones_like(i)], -1)
-    # Rotate ray directions from camera frame to the world frame
-    rays_d = torch.sum(dirs[..., np.newaxis, :] * c2w[:3,:3], -1)  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
-    # Translate camera frame's origin to the world frame. It is the origin of all rays.
-    rays_o = c2w[:3,-1].expand(rays_d.shape)
-    return rays_o, rays_d
+# def get_rays(H, W, K, c2w):
+#     i, j = torch.meshgrid(torch.linspace(0, W-1, W), torch.linspace(0, H-1, H))  # pytorch's meshgrid has indexing='ij'
+#     i = i.t()
+#     j = j.t()
+#     i = i.to(device)
+#     j = j.to(device)
+#
+#     dirs = torch.stack([(i-K[0][2])/K[0][0], -(j-K[1][2])/K[1][1], -torch.ones_like(i)], -1)
+#     # Rotate ray directions from camera frame to the world frame
+#     rays_d = torch.sum(dirs[..., np.newaxis, :] * c2w[:3,:3], -1)  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
+#     # Translate camera frame's origin to the world frame. It is the origin of all rays.
+#     rays_o = c2w[:3,-1].expand(rays_d.shape)
+#     return rays_o, rays_d
 
 #TODO: REFACTOR
 def get_rays_np(H, W, K, c2w):
@@ -177,10 +172,7 @@ class BatchedRayLoader():
         rays_o = rays_o[sel_c_flat, :]  # (ray_batch_sz, 3)
         rays_d = rays_d[sel_c_flat, :]  # (ray_batch_sz, 3)
 
-
         # stack origin and direction together
-        # TODO: do this first lmfao
-        # batch_rays = torch.stack([rays_o, rays_d], 0) # (ray_batch_sz, 6)
 
         # --- IMPORTANT, D BEFORE O ---
         batch_rays = torch.stack([rays_d, rays_o], 0)
