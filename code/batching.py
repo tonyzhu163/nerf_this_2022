@@ -177,9 +177,6 @@ class BatchedRayLoader():
         rays_o = rays_o[sel_c_flat, :]  # (ray_batch_sz, 3)
         rays_d = rays_d[sel_c_flat, :]  # (ray_batch_sz, 3)
 
-        torch.set_printoptions(profile="full")
-        print(rays_d)
-        torch.set_printoptions(profile="default")
 
         # stack origin and direction together
         # TODO: do this first lmfao
