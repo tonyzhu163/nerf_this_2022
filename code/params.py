@@ -40,7 +40,7 @@ class ModelParameters:
     N_samples: int = 64
     # * N_importance if >= 1, increases the number of bins in the fine sample (only called on the fine NERF once)
     N_importance: int = 128 #TEMP, change this to 1 when coarse is working
-    perturb: int = 1.0
+    perturb: float = 1.0
     # use_viewdirs: I think we assume this is always positive
     #* set 1 for hashed embedding, 0 for default positional encoding, 2 for spherical
     i_embed: int = 0
