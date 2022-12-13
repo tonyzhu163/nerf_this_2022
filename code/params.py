@@ -75,6 +75,7 @@ class ModelParameters:
     i_video: int = 5000 # number of epochs per render
     tensorboard: bool = True
     i_tensorboard: int = 100
+    test_weights: bool = True
 
 
 def get_params():

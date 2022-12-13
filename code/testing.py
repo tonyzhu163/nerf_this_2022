@@ -4,13 +4,15 @@ from pathlib import Path
 from model import NeRF
 from batching import BatchedRayLoader
 from run import img2mse, mse2psnr
+from render import render
+
 
 # test code put in run
 # -1 turns always turns off cropping
-test_loader = BatchedRayLoader(images, poses, i_test, H, W, K, device, params, sample_mode='single', start=-1)
 
 # total test size is test_size * repeat_test
-def test_weights(model: NeRF, model_fine: NeRF, test_size, repeat_test, weights_path, test_loader: BatchedRayLoader):
+def test_weights(network_fn: NeRF, network_fine: NeRF, optimizer, test_size, repeat_test, weights_path, test_loader: BatchedRayLoader
+                 , ray_chunk_sz, device, H, W, K, **render_kwargs):
     weights = []
     ret = {}
     epochs = []
@@ -29,14 +31,14 @@ def test_weights(model: NeRF, model_fine: NeRF, test_size, repeat_test, weights_
         epoch = int(w.stem())
         epochs.append(epoch)
 
-        # ckpt = torch.load(w)
-        # start = ckpt['global_step']
-        # optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-        #
-        # # Load model
-        # model.load_state_dict(ckpt['network_fn_state_dict'])
-        # if model_fine is not None:
-        #     model_fine.load_state_dict(ckpt['network_fine_state_dict'])
+        ckpt = torch.load(w)
+        start = ckpt['global_step']
+        optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+
+        # Load model
+        network_fn.load_state_dict(ckpt['network_fn_state_dict'])
+        if network_fine is not None:
+            network_fine.load_state_dict(ckpt['network_fine_state_dict'])
 
         loss_avg = []
         psnr_avg = []
@@ -46,7 +48,7 @@ def test_weights(model: NeRF, model_fine: NeRF, test_size, repeat_test, weights_
 
             rays, target_rgb = test_loader.get_sample(test_size)
             render_outputs, extras = render(
-                H, W, K, params.ray_chunk_sz, rays, device, **render_kwargs_train
+                H, W, K, ray_chunk_sz, rays, device, **render_kwargs
             )
             rgb, disp, acc = render_outputs
 
