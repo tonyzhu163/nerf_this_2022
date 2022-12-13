@@ -13,6 +13,7 @@ from params import get_params
 from generate_output import generate_output
 from model import create_nerf
 from batching import BatchedRayLoader
+from validate import validate
 
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
@@ -83,6 +84,7 @@ def main():
     # batches and creates rays from poses
     sample_mode = 'all' if params.use_batching else 'single'
     dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode, start = start)
+    dataloader_val = BatchedRayLoader(images, poses, i_val, H, W, K, device, params, sample_mode, start = start)
     coarse_fine = "coarse" if params.N_importance<=0 else "fine"
 
     time = "{:%Y_%m_%d_%H_%M_%S}".format(datetime.datetime.now())
@@ -93,6 +95,10 @@ def main():
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #
         
         rays, target_rgb = dataloader.get_sample()
+        rays_val, target_rgb_val = dataloader_val.get_sample()
+        loss_val, psnr_val, psnr0_val = validate(
+            H, W, K, params.ray_chunk_sz, rays_val, target_rgb_val, device, **render_kwargs_train
+            )
         
         #TODO: could probably clean up the function call parameters
         render_outputs, extras = render(
@@ -162,11 +168,15 @@ def main():
         if global_step % params.i_print == 0:
             if params.N_importance>0:
                 tqdm.write(
-                    f"[TRAIN] Iter: {global_step} Loss: {loss.item()}  Fine PSNR: {psnr.item()} Coase PSNR: {psnr0.item()}" 
+                    f"""[TRAIN] Iter: {global_step} Loss: {loss.item()}  Fine PSNR: {psnr.item()} Coase PSNR: {psnr0.item()};
+                    Loss_val: {loss_val.item()}  Fine PSNR_val: {psnr_val.item()} Coase PSNR_val: {psnr0_val.item()}
+                    """ 
                 )
             else:
                 tqdm.write(
-                    f"[TRAIN] Iter: {global_step} Loss: {loss.item()}  Coase PSNR: {psnr.item()}"
+                    f"""[TRAIN] Iter: {global_step} Loss: {loss.item()} Coase PSNR: {psnr0.item()};
+                    Loss_val: {loss_val.item()}  Coase PSNR_val: {psnr0_val.item()}
+                    """ 
                 )
 
         # --- DRAW ---
@@ -178,6 +188,12 @@ def main():
             # writer.add_scalar('PSNR/test', np.random.random(), global_step)
             if params.N_importance>0:
                 writer.add_scalar("PSNR0/train", psnr0, global_step)
+            writer.add_scalar('Loss_val/train', loss_val, global_step)
+            # writer.add_scalar('Loss/test', np.random.random(), global_step)
+            writer.add_scalar('PSNR_val/train', psnr_val, global_step)
+            # writer.add_scalar('PSNR/test', np.random.random(), global_step)
+            if params.N_importance>0:
+                writer.add_scalar("PSNR0_val/train", psnr0_val, global_step)
 
 
 if __name__ == "__main__":
