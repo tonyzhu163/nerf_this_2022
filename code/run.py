@@ -35,14 +35,14 @@ def main():
     params = get_params()
 
     #####testing purpose#######
-    params.i_weights = 500
-    params.epochs = 2001
+    params.i_weights = 1000
+    params.epochs = 20000
     # params.i_video = 2000
     params.i_print = 100
     params.render_factor = 0
     # params.render_only = True
     params.use_batching = False
-    params.no_reload = False
+    params.no_reload = True
 
     ###########################
 
