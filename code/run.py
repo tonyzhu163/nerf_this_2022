@@ -204,7 +204,7 @@ def main():
                                            start=-1)
 
             weights_dict = test_weights(test_loader, optimizer, device,  H, W, K, params.ray_chunk_sz,
-                                        test_size=1024, repeat_test=4, **render_kwargs_test)
+                                        test_size=1024, n=0, i_test=i_test, **render_kwargs_test)
 
             for idx, i in enumerate(weights_dict['epoch']):
                 writer.add_scalar('Loss/test', weights_dict['loss'][idx], i)
