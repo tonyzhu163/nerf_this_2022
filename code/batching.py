@@ -65,7 +65,7 @@ class BatchedRayLoader():
             self.current_batch_i = None # not used if single sampling
             self.get_rays_fn = self.rays_from_single
 
-    def get_sample(self, sample_size=None):
+    def get_sample(self, sample_size=None, img_i=None):
         """
         samples a random set of rays. sample source depends on if set to
         'all' or 'single'. 
@@ -76,7 +76,7 @@ class BatchedRayLoader():
         if not sample_size:
             sample_size = self.params.ray_batch_sz
 
-        batch_rays, target_s = self.get_rays_fn(sample_size)
+        batch_rays, target_s = self.get_rays_fn(sample_size, img_i)
         # --- TEMP FIX ---
         target_s = target_s.cpu()
         self.i +=1
@@ -146,9 +146,10 @@ class BatchedRayLoader():
         return coords
 
     
-    def rays_from_single(self, sample_size):
+    def rays_from_single(self, sample_size, img_i):
         # randomly select one image from training set
-        img_i = np.random.choice(self.i_train)
+        if not img_i:
+            img_i = np.random.choice(self.i_train)
         target_image = self.images[img_i]
         target_image = torch.Tensor(target_image).to(self.device)
         cam_geo = [self.H, self.W]
