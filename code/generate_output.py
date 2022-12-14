@@ -11,7 +11,7 @@ from render import render
 #TODO: This entire class needs to be refactored
 
 def generate_output(H, W, K, Rs, test_imgs, start, device, params: ModelParameters, **render_kwargs) -> None:
-    Rs, test_imgs = Rs[:100], test_imgs[:100] #TEMP
+    # Rs, test_imgs = Rs[:100], test_imgs[:100] #TEMP
     
     print('SET TO RENDER ONLY')
     print('Rendering now...')
