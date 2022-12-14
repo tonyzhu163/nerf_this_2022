@@ -26,7 +26,7 @@ def get_rays_np(H, W, K, c2w):
 #                                Main DataLoader                               #
 # ---------------------------------------------------------------------------- #
 class BatchedRayLoader():
-    def __init__(self, images, poses, i_train, H, W, K, device, params: ModelParameters, sample_mode, start) -> None:
+    def __init__(self, images, poses, i_train, H, W, K, device, params: ModelParameters, sample_mode, start, enable_precrop=True) -> None:
         """
         Arguments
         - sample_mode str: either 'all' or 'single', determines if each iteration samples from across all images or a single image
@@ -41,6 +41,7 @@ class BatchedRayLoader():
         self.W = W
         self.K = K
         self.params = params
+        self.enable_precrop = enable_precrop
         assert sample_mode in ['all', 'single']
         if sample_mode == 'all':
             self.all_rays = self.preload_all_rays()
@@ -107,9 +108,9 @@ class BatchedRayLoader():
     #     return batch_rays, target_s
     
     
-    def get_coords(self, use_precrop=False):
+    def get_coords(self):
         H, W = self.H, self.W
-        if self.i < self.params.precrop_iters:
+        if self.i < self.params.precrop_iters and self.enable_precrop:
             dH = int(H//2 * self.params.precrop_frac)
             dW = int(W//2 * self.params.precrop_frac)
             grid = torch.meshgrid(
@@ -119,7 +120,7 @@ class BatchedRayLoader():
             #* they used self.i == start, which is the "start" index for models
             #* restored from a checkpoint. For now we'll just use 0
             #* edit: now self.i = start implemented
-            if self.i == 0:
+            if self.i == 1:
                 print(f"[Config] Center cropping of size {2*dH} x {2*dW} is enabled until iter {self.params.precrop_iters}")
         else:
             #* basically meshgrid creates a cartesian product resulting in the coords of every discrete location in a grid. (0,1), (1,1), (0,2), (1,2) etc.
@@ -147,10 +148,9 @@ class BatchedRayLoader():
         # rays_o, rays_d = get_rays(*cam_geo) # (H,W,3), (H,W,3)
         rays_d, rays_o = generate_rays(*cam_geo)
 
-        use_precrop = self.i < self.params.precrop_iters or self.i == -1
         ## 200 * 200 = 40000
         # TODO: REFACTOR
-        coords = self.get_coords(use_precrop)
+        coords = self.get_coords()
         # choose a random selection of rays of size ray_batch_sz
         select_inds = np.random.choice(coords.shape[0], size=[sample_size], replace=False)  # (ray_batch_sz,)
         # get those coords

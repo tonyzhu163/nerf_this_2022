@@ -39,15 +39,16 @@ def main():
     params = get_params()
 
     #####testing purpose#######
+    params.object = "chair"
     params.i_weights = 1000
-    params.epochs = 50000
+    params.epochs = 150000
     # params.i_video = 2000
     params.i_print = 100
     params.render_factor = 1
-    # params.render_only = True
+    params.render_only = False
     params.use_batching = False
-    # params.no_reload = True
-    params.test_weights = True
+    params.no_reload = True
+    params.test_weights = False
 
     ###########################
 
@@ -100,7 +101,7 @@ def main():
             weights_path = Path.cwd().parent / 'logs' / 'weights' / 'fine' / 'single' / params.object
             print('loading_weights')
             test_loader = BatchedRayLoader(images, poses, i_test, H, W, K, device, params, sample_mode='single',
-                                            start=-1)
+                                            start=-1,enable_precrop=False)
 
             weights_dict = test_weights(test_size=1024, n=50, weights_path=weights_path, test_loader=test_loader,
                                         ray_chunk_sz=params.ray_chunk_sz, device=device,  H=H, W=W, K=K,           
