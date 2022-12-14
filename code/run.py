@@ -130,6 +130,14 @@ def main():
         update_lr(params, optimizer, global_step)
 
         # --------------- Saving Model Output / Weights ---------------------- #
+        if global_step % params.i_img == 0:
+            with torch.no_grad():
+                R = torch.Tensor(poses[:1]).to(device)
+                rgbs, *_ = render_path(H, W, K, R, params.ray_chunk_sz, device, gt_imgs=images[:1], **render_kwargs_test)
+                filepath = os.path.join("..", *params.savedir, "weights", coarse_fine, sample_mode, params.object)
+                filename = f'{params.expname}_output_{global_step}.jpg'
+                os.makedirs(filepath, exist_ok=True)
+                imageio.imwrite(os.path.join(filepath, filename), to8b(rgbs[-1]))
         #TODO
         if global_step % params.i_weights == 0:
             folder_path = os.path.join("..", *params.savedir, "weights", coarse_fine, sample_mode, params.object)
@@ -170,14 +178,14 @@ def main():
         if global_step % params.i_print == 0:
             if params.N_importance>0:
                 tqdm.write(
-                    f"""[TRAIN] Iter: {global_step} Loss: {loss.item()}  Fine PSNR: {psnr.item()} Coase PSNR: {psnr0.item()};
-                    Loss_val: {loss_val.item()}  Fine PSNR_val: {psnr_val.item()} Coase PSNR_val: {psnr0_val.item()}
+                    f"""[TRAIN] Iter: {global_step} Loss: {loss.item()}  Fine PSNR: {psnr.item()} Coarse PSNR: {psnr0.item()};
+                    Loss_val: {loss_val.item()}  Fine PSNR_val: {psnr_val.item()} Coarse PSNR_val: {psnr0_val.item()}
                     """ 
                 )
             else:
                 tqdm.write(
-                    f"""[TRAIN] Iter: {global_step} Loss: {loss.item()} Coase PSNR: {psnr0.item()};
-                    Loss_val: {loss_val.item()}  Coase PSNR_val: {psnr0_val.item()}
+                    f"""[TRAIN] Iter: {global_step} Loss: {loss.item()} Coarse PSNR: {psnr0.item()};
+                    Loss_val: {loss_val.item()}  Coarse PSNR_val: {psnr0_val.item()}
                     """ 
                 )
 
