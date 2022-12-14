@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 from pathlib import Path
+
+from tqdm import tqdm
 from model import NeRF
 from batching import BatchedRayLoader
 from render import render
@@ -29,7 +31,7 @@ def test_weights(test_size, n, weights_path, test_loader: BatchedRayLoader, \
     psnr_lst = []
     psnr0_lst = []
 
-    for w in weights:
+    for w in tqdm(weights):
         epoch = int(w.stem)
         epochs.append(epoch)
 
@@ -70,9 +72,9 @@ def test_weights(test_size, n, weights_path, test_loader: BatchedRayLoader, \
             loss_avg.append(loss)
             loss_0.append(loss0)
 
-        loss_lst.append(np.mean(loss_avg))
-        psnr_lst.append(mse2psnr(np.mean(loss_1)))
-        psnr0_lst.append(mse2psnr(np.mean(loss_0)))
+        loss_lst.append(torch.mean(torch.Tensor(loss_avg)))
+        psnr_lst.append(mse2psnr(torch.mean(torch.Tensor(loss_1))))
+        psnr0_lst.append(mse2psnr(torch.mean(torch.Tensor(loss_0))))
 
     ret['loss'] = loss_lst
     ret['psnr'] = psnr_lst

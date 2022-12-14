@@ -47,7 +47,7 @@ def main():
     # params.render_only = True
     params.use_batching = False
     # params.no_reload = True
-    # params.test_weights = True
+    params.test_weights = True
 
     ###########################
 
@@ -96,20 +96,20 @@ def main():
     writer = SummaryWriter(log_dir=f'{tb_path}')
 
     if  params.test_weights:
-        weights_path = Path.cwd().parent / 'logs' / 'weights' / 'fine' / 'single' / params.object
-        print('loading_weights')
-        test_loader = BatchedRayLoader(images, poses, i_test, H, W, K, device, params, sample_mode='single',
-                                        start=-1)
+        with torch.no_grad():
+            weights_path = Path.cwd().parent / 'logs' / 'weights' / 'fine' / 'single' / params.object
+            print('loading_weights')
+            test_loader = BatchedRayLoader(images, poses, i_test, H, W, K, device, params, sample_mode='single',
+                                            start=-1)
 
-        weights_dict = test_weights(test_size=1024, n=50, weights_path=weights_path, test_loader=test_loader,
-                                    ray_chunk_sz=params.ray_chunk_sz, device=device,  H=H, W=W, K=K,           
-                                    i_test=i_test, test_all=False, **render_kwargs_test)
+            weights_dict = test_weights(test_size=1024, n=50, weights_path=weights_path, test_loader=test_loader,
+                                        ray_chunk_sz=params.ray_chunk_sz, device=device,  H=H, W=W, K=K,           
+                                        i_test=i_test, test_all=False, **render_kwargs_test)
 
-        for idx, i in enumerate(weights_dict['epoch']):
-            writer.add_scalar('Loss/test', weights_dict['loss'][idx], i)
-            writer.add_scalar('PSNR/test', weights_dict['psnr'][idx], i)
-
-        return 
+            for idx, i in enumerate(weights_dict['epoch']):
+                writer.add_scalar('Loss/test', weights_dict['loss'][idx], i)
+                writer.add_scalar('PSNR/test', weights_dict['psnr'][idx], i)
+            return 
 
     for global_step in trange(start + 1, params.epochs + 1):
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #            
