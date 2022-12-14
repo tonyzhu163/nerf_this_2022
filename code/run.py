@@ -14,13 +14,15 @@ from generate_output import generate_output
 from model import create_nerf
 from batching import BatchedRayLoader
 from validate import validate
+from get_device import device
+
+
 
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
-# TODO: why can't we use torch here
-# to8b = lambda x : (255*clip(x,0,1)).astype(uint8)
-# TODO: why can't we use torch here
-to8b = lambda x: (255 * torch.clip(x, 0, 1)).astype(torch.uint8)
+
+to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
+
 
 
 def update_lr(params, optimizer, global_step):

@@ -187,7 +187,7 @@ def create_nerf(args, device):
         if len(ckpts) > 0:
             ckpt_path = ckpts[-1]
             print('Reloading from', ckpt_path)
-            ckpt = torch.load(ckpt_path)
+            ckpt = torch.load(ckpt_path, map_location=device)
             
             start = ckpt['global_step']
             optimizer.load_state_dict(ckpt['optimizer_state_dict'])

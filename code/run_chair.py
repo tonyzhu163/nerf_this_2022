@@ -13,6 +13,9 @@ from params import get_params
 from generate_output import generate_output
 from model import create_nerf
 from batching import BatchedRayLoader
+from get_device import device
+
+
 
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
@@ -52,11 +55,11 @@ def main():
     params.i_weights = 1000 
     # params.i_tensorboard = 1
 
+    params.render_factor = 1
     params.no_reload = True
     params.render_only = False
+    params.render_test = True
     ###########################
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_dir = os.path.join(Path.cwd().parent, *params.datadir, params.object)
     print(data_dir)
