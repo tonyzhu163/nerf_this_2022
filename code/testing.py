@@ -13,9 +13,8 @@ from render import render
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
 
-def test_weights(optimizer, test_size, n, weights_path, test_loader: BatchedRayLoader, \
-                 ray_chunk_sz, device, H, W, K, i_test, test_all = True, \
-                 network_fn = None, network_fine = None, \
+def test_weights(test_size, n, weights_path, test_loader: BatchedRayLoader, \
+                 ray_chunk_sz, device, H, W, K, i_test, network_fn, network_fine=None,test_all = True,  \
                  **render_kwargs):
     weights = []
     ret = {}
@@ -35,12 +34,14 @@ def test_weights(optimizer, test_size, n, weights_path, test_loader: BatchedRayL
         epochs.append(epoch)
 
         ckpt = torch.load(w)
-        optimizer.load_state_dict(ckpt['optimizer_state_dict'])
 
         # Load model
         network_fn.load_state_dict(ckpt['network_fn_state_dict'])
         if network_fine is not None:
             network_fine.load_state_dict(ckpt['network_fine_state_dict'])
+        
+        render_kwargs["network_fn"] = network_fn
+        render_kwargs["network_fine"] = network_fine
 
         loss_avg = []
         loss_0 = []
@@ -59,7 +60,6 @@ def test_weights(optimizer, test_size, n, weights_path, test_loader: BatchedRayL
             rgb, disp, acc = render_outputs
 
             loss = img2mse(rgb, target_rgb)  # * mean squared error as tensor
-            psnr = mse2psnr(loss)
 
             loss_1.append(loss)
 

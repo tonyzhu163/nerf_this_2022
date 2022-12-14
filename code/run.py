@@ -91,9 +91,22 @@ def main():
     time = "{:%Y_%m_%d_%H_%M_%S}".format(datetime.datetime.now())
     tb_path = Path.cwd().parent / 'logs' / 'tensorboard' / time
     writer = SummaryWriter(log_dir=f'{tb_path}')
+    if  params.test_weights:
+        weights_path = Path.cwd().parent / 'logs' / 'weights' / 'fine' / 'single' / 'chair'
+        print('loading_weights')
+        test_loader = BatchedRayLoader(images, poses, i_test, H, W, K, device, params, sample_mode='single',
+                                        start=-1)
+
+        weights_dict = test_weights(test_size=1024, n=0, weights_path=weights_path, test_loader=test_loader,
+                                    ray_chunk_sz=params.ray_chunk_sz, device=device,  H=H, W=W, K=K,           
+                                    i_test=i_test, **render_kwargs_test)
+
+        for idx, i in enumerate(weights_dict['epoch']):
+            writer.add_scalar('Loss/test', weights_dict['loss'][idx], i)
+            writer.add_scalar('PSNR/test', weights_dict['psnr'][idx], i)
 
     for global_step in trange(start + 1, params.epochs + 1):
-        # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #
+        # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #            
         
         rays, target_rgb = dataloader.get_sample()
         # rays_val, target_rgb_val = dataloader_val.get_sample()
@@ -198,19 +211,6 @@ def main():
             # if params.N_importance>0:
                 # writer.add_scalar("PSNR0_val/train", psnr0_val, global_step)
 
-        if global_step == 1 and params.test_weights:
-            weights_path = Path.cwd().parent / 'logs' / 'weights' / 'fine' / 'single' / 'chair'
-            print('loading_weights')
-            test_loader = BatchedRayLoader(images, poses, i_test, H, W, K, device, params, sample_mode='single',
-                                           start=-1)
-
-            weights_dict = test_weights(optimizer=optimizer, device=device, test_loader=test_loader, H=H, W=W, K=K, ray_chunk_sz=params.ray_chunk_sz,
-                                        weights_path=weights_path,
-                                        test_size=1024, n=0, i_test=i_test, **render_kwargs_test)
-
-            for idx, i in enumerate(weights_dict['epoch']):
-                writer.add_scalar('Loss/test', weights_dict['loss'][idx], i)
-                writer.add_scalar('PSNR/test', weights_dict['psnr'][idx], i)
 
 
 if __name__ == "__main__":
