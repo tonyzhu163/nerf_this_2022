@@ -1,7 +1,6 @@
 import torch
 import numpy as np
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from get_device import device
 
 def generate_rays(H, W, K, pose):
     focal = K[0][0]

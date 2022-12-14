@@ -4,8 +4,7 @@ from collections import defaultdict
 from rays import generate_rays, sample_coarse, sample_fine
 from raw2outputs import raw2outputs
 from model import run_network
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from get_device import device
 
 def render(H, W, K, ray_chunk_sz, rays, device, near, far, **kwargs):
 

@@ -1,10 +1,13 @@
 import os
 from pathlib import Path
 import datetime
+import imageio
+import numpy as np
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm, trange
+from generate_output import render_path
 
 
 from load_blender import load_blender_data
@@ -14,14 +17,14 @@ from generate_output import generate_output
 from model import create_nerf
 from batching import BatchedRayLoader
 from validate import validate
+from get_device import device
 from testing import test_weights
 
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
-# TODO: why can't we use torch here
-# to8b = lambda x : (255*clip(x,0,1)).astype(uint8)
-# TODO: why can't we use torch here
-to8b = lambda x: (255 * torch.clip(x, 0, 1)).astype(torch.uint8)
+
+to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
+
 
 
 def update_lr(params, optimizer, global_step):
@@ -37,17 +40,15 @@ def main():
 
     #####testing purpose#######
     params.i_weights = 1000
-    params.epochs = 20000
+    params.epochs = 50000
     # params.i_video = 2000
     params.i_print = 100
-    params.render_factor = 0
+    params.render_factor = 1
     # params.render_only = True
     params.use_batching = False
-    params.no_reload = True
+    # params.no_reload = True
 
     ###########################
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_dir = os.path.join(Path.cwd().parent, *params.datadir, params.object)
     #TODO: right now the images outputted are 3 channel: RGB. However blender
@@ -85,7 +86,8 @@ def main():
     # batches and creates rays from poses
     sample_mode = 'all' if params.use_batching else 'single'
     dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode, start = start)
-    # dataloader_val = BatchedRayLoader(images, poses, i_val, H, W, K, device, params, sample_mode, start = start)
+    if params.use_validation:
+        dataloader_val = BatchedRayLoader(images, poses, i_val, H, W, K, device, params, sample_mode, start = start)
     coarse_fine = "coarse" if params.N_importance<=0 else "fine"
 
     time = "{:%Y_%m_%d_%H_%M_%S}".format(datetime.datetime.now())
@@ -109,10 +111,12 @@ def main():
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #            
         
         rays, target_rgb = dataloader.get_sample()
-        # rays_val, target_rgb_val = dataloader_val.get_sample()
-        # loss_val, psnr_val, psnr0_val = validate(
-        #     H, W, K, params.ray_chunk_sz, rays_val, target_rgb_val, device, **render_kwargs_train
-        #     )
+        
+        if params.use_validation:
+            rays_val, target_rgb_val = dataloader_val.get_sample()
+            loss_val, psnr_val, psnr0_val = validate(
+                H, W, K, params.ray_chunk_sz, rays_val, target_rgb_val, device, **render_kwargs_train
+                )
         
         #TODO: could probably clean up the function call parameters
         render_outputs, extras = render(
@@ -142,6 +146,14 @@ def main():
         update_lr(params, optimizer, global_step)
 
         # --------------- Saving Model Output / Weights ---------------------- #
+        if global_step % params.i_img == 0:
+            with torch.no_grad():
+                R = torch.Tensor(poses[:1]).to(device)
+                rgbs, *_ = render_path(H, W, K, R, params.ray_chunk_sz, device, gt_imgs=images[:1], **render_kwargs_test)
+                filepath = os.path.join("..", *params.savedir, "weights", coarse_fine, sample_mode, params.object)
+                filename = f'{params.expname}_output_{global_step}.jpg'
+                os.makedirs(filepath, exist_ok=True)
+                imageio.imwrite(os.path.join(filepath, filename), to8b(rgbs[-1]))
         #TODO
         if global_step % params.i_weights == 0:
             folder_path = os.path.join("..", *params.savedir, "weights", coarse_fine, sample_mode, params.object)
@@ -196,21 +208,48 @@ def main():
                 )
 
         # --- DRAW ---
-
+            
         if params.tensorboard and global_step % params.i_tensorboard == 0:
-            writer.add_scalar('Loss/train', loss, global_step)
-            # writer.add_scalar('Loss/test', np.random.random(), global_step)
-            writer.add_scalar('PSNR/train', psnr, global_step)
-            # writer.add_scalar('PSNR/test', np.random.random(), global_step)
-            if params.N_importance>0:
-                writer.add_scalar("PSNR0/train", psnr0, global_step)
-            # writer.add_scalar('Loss_val/train', loss_val, global_step)
-            # writer.add_scalar('Loss/test', np.random.random(), global_step)
-            # writer.add_scalar('PSNR_val/train', psnr_val, global_step)
-            # writer.add_scalar('PSNR/test', np.random.random(), global_step)
-            # if params.N_importance>0:
-                # writer.add_scalar("PSNR0_val/train", psnr0_val, global_step)
+            if params.use_validation:
+                writer.add_scalars('Loss', {
+                        'train': loss,
+                        'validation': loss_val,
+                    }, global_step)
+                if params.N_importance==0:
+                    writer.add_scalars('PSNR Coarse', {
+                            'train': psnr,
+                            'validation': psnr_val,
+                        }, global_step)
+                else:
+                    writer.add_scalars('PSNR Coarse', {
+                            'train': psnr0,
+                            'validation': psnr0_val,
+                        }, global_step)
+                    writer.add_scalars('PSNR Fine', {
+                            'train': psnr,
+                            'validation': psnr_val,
+                        }, global_step)
+            else:
+                writer.add_scalar('Loss/train', loss, global_step)
+                # writer.add_scalar('Loss/test', np.random.random(), global_step)
+                writer.add_scalar('PSNR/train', psnr, global_step)
+                # writer.add_scalar('PSNR/test', np.random.random(), global_step)
+                if params.N_importance>0:
+                    writer.add_scalar("PSNR0/train", psnr0, global_step)
+        
+        if global_step == 1 and params.test_weights:
+            weights_path = Path.cwd().parent / 'logs' / 'weights' / 'fine' / 'single' / 'chair'
+            print('loading_weights')
+            test_loader = BatchedRayLoader(images, poses, i_test, H, W, K, device, params, sample_mode='single',
+                                           start=-1)
 
+            weights_dict = test_weights(optimizer=optimizer, device=device, test_loader=test_loader, H=H, W=W, K=K, ray_chunk_sz=params.ray_chunk_sz,
+                                        weights_path=weights_path,
+                                        test_size=1024, n=0, i_test=i_test, **render_kwargs_test)
+
+            for idx, i in enumerate(weights_dict['epoch']):
+                writer.add_scalar('Loss/test', weights_dict['loss'][idx], i)
+                writer.add_scalar('PSNR/test', weights_dict['psnr'][idx], i)
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ class ModelParameters:
     datadir: list[str]
     object: str
     savedir: list[str]
-    epochs: int = 10000
+    epochs: int = 50000
     # pixel_nerf 500 -> 5 min aim for 10000 for now
 
     netdepth: int = 8
@@ -31,8 +31,8 @@ class ModelParameters:
     #* ray_chunk_sz might only used during rendering, since chunks are larger than batch size
     ray_chunk_sz: int = 1024 * 8 #* previously chunk
     point_chunk_sz: int = 1024 * 16  #* previously netchunk
-    use_batching: bool = True
-    no_reload: bool = True
+    use_batching: bool = False
+    no_reload: bool = False
     ft_path: str = None
 
     # ----------------------------- rendering options ---------------------------- #
@@ -53,7 +53,7 @@ class ModelParameters:
     render_only: bool = False
     #* render the test set instead of render_poses path
     render_test: bool = True
-    render_factor: int = 4
+    render_factor: int = 1
     precrop_iters: int = 500 #* customize this for each model
     precrop_frac: float = 0.5 #* customize this for each model
     # dataset_type:
@@ -61,6 +61,8 @@ class ModelParameters:
     # shape:
     white_bkgd: bool = True  # ? True?
     half_res: bool = True  # ? True?
+    
+    use_validation: bool = False
     ## llff flags
     # factor:
     # no_ndc:
@@ -68,9 +70,9 @@ class ModelParameters:
     # spherify:
     # llffhold:
     ## logging/saving options
-    i_print: int = 1000 # number of epochs per console printout
+    i_print: int = 100 # number of epochs per console printout
     i_img: int = 500 # number of epochs per tensorboard output
-    i_weights: int = 1000 # number of epochs per checkpoint, previously 10000
+    i_weights: int = 250 # number of epochs per checkpoint, previously 10000
     i_testset: int = 1000 #
     i_video: int = 5000 # number of epochs per render
     tensorboard: bool = True
@@ -96,6 +98,16 @@ def get_params():
         "--render_only",
         action='store_true',
         help="only render, don't train",
+    )
+    parser.add_argument(
+        "--no_reload",
+        action='store_true',
+        help="start training from scratch, no restoring weights",
+    )
+    parser.add_argument(
+        "--use_validation",
+        action='store_true',
+        help="run train loop with validation test",
     )
     args = parser.parse_args()
     params = ModelParameters(datadir=["data", "nerf_synthetic"], savedir=["logs"], **vars(args))
