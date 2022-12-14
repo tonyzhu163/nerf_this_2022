@@ -3,16 +3,20 @@ import numpy as np
 from pathlib import Path
 from model import NeRF
 from batching import BatchedRayLoader
-from run import img2mse, mse2psnr
 from render import render
-
 
 # test code put in run
 # -1 turns always turns off cropping
 
 # total test size is test_size * repeat_test
-def test_weights(network_fn: NeRF, network_fine: NeRF, optimizer, test_size, n, weights_path, test_loader: BatchedRayLoader
-                 , ray_chunk_sz, device, H, W, K, i_test, test_all = True, **render_kwargs):
+
+img2mse = lambda x, y: torch.mean((x - y) ** 2)
+mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
+
+def test_weights(optimizer, test_size, n, weights_path, test_loader: BatchedRayLoader, \
+                 ray_chunk_sz, device, H, W, K, i_test, test_all = True, \
+                 network_fn = None, network_fine = None, \
+                 **render_kwargs):
     weights = []
     ret = {}
     epochs = []
@@ -47,7 +51,7 @@ def test_weights(network_fn: NeRF, network_fine: NeRF, optimizer, test_size, n, 
         else:
             ns = np.random.choice(i_test, n, replace=False)
 
-        for x in range(ns):
+        for x in ns:
             rays, target_rgb = test_loader.get_sample(test_size, x)
             render_outputs, extras = render(
                 H, W, K, ray_chunk_sz, rays, device, **render_kwargs
@@ -65,7 +69,6 @@ def test_weights(network_fn: NeRF, network_fine: NeRF, optimizer, test_size, n, 
 
             loss_avg.append(loss)
             loss_0.append(loss0)
-
 
         loss_lst.append(np.mean(loss_avg))
         psnr_lst.append(mse2psnr(np.mean(loss_1)))

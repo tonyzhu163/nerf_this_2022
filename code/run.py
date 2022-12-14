@@ -199,11 +199,13 @@ def main():
                 # writer.add_scalar("PSNR0_val/train", psnr0_val, global_step)
 
         if global_step == 1 and params.test_weights:
+            weights_path = Path.cwd().parent / 'logs' / 'weights' / 'fine' / 'single' / 'chair'
             print('loading_weights')
             test_loader = BatchedRayLoader(images, poses, i_test, H, W, K, device, params, sample_mode='single',
                                            start=-1)
 
-            weights_dict = test_weights(test_loader, optimizer, device,  H, W, K, params.ray_chunk_sz,
+            weights_dict = test_weights(optimizer=optimizer, device=device, test_loader=test_loader, H=H, W=W, K=K, ray_chunk_sz=params.ray_chunk_sz,
+                                        weights_path=weights_path,
                                         test_size=1024, n=0, i_test=i_test, **render_kwargs_test)
 
             for idx, i in enumerate(weights_dict['epoch']):
