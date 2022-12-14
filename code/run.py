@@ -1,10 +1,13 @@
 import os
 from pathlib import Path
 import datetime
+import imageio
+import numpy as np
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm, trange
+from generate_output import render_path
 
 
 from load_blender import load_blender_data
@@ -36,19 +39,20 @@ def update_lr(params, optimizer, global_step):
 def main():
     params = get_params()
 
-    #####testing purpose#######
-    params.i_weights = 500
-    params.epochs = 2001
-    # params.i_video = 2000
-    params.i_print = 100
-    params.render_factor = 0
-    # params.render_only = True
-    params.use_batching = False
-    params.no_reload = False
+    # #####testing purpose#######
+    # params.i_weights = 500
+    # params.epochs = 50000
+    # # params.i_video = 2000
+    # params.i_print = 100
+    # # params.render_factor = 0
+    # # params.i_weights = 500
+    # # params.epochs = 2001
+    # # params.i_video = 2000
+    # # params.render_factor = 4
+    # # params.render_only = True
+    # params.use_batching = False
 
     ###########################
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_dir = os.path.join(Path.cwd().parent, *params.datadir, params.object)
     #TODO: right now the images outputted are 3 channel: RGB. However blender
@@ -192,18 +196,32 @@ def main():
         # --- DRAW ---
 
         if params.tensorboard and global_step % params.i_tensorboard == 0:
-            writer.add_scalar('Loss/train', loss, global_step)
-            # writer.add_scalar('Loss/test', np.random.random(), global_step)
-            writer.add_scalar('PSNR/train', psnr, global_step)
-            # writer.add_scalar('PSNR/test', np.random.random(), global_step)
-            if params.N_importance>0:
-                writer.add_scalar("PSNR0/train", psnr0, global_step)
-            writer.add_scalar('Loss_val/train', loss_val, global_step)
-            # writer.add_scalar('Loss/test', np.random.random(), global_step)
-            writer.add_scalar('PSNR_val/train', psnr_val, global_step)
-            # writer.add_scalar('PSNR/test', np.random.random(), global_step)
-            if params.N_importance>0:
-                writer.add_scalar("PSNR0_val/train", psnr0_val, global_step)
+            writer.add_scalars('Loss', {
+                    'train': loss,
+                    'validation': loss_val,
+                }, global_step)
+            if params.N_importance==0:
+                writer.add_scalars('PSNR Coarse', {
+                        'train': psnr,
+                        'validation': psnr_val,
+                    }, global_step)
+            else:
+                writer.add_scalars('PSNR Coarse', {
+                        'train': psnr0,
+                        'validation': psnr0_val,
+                    }, global_step)
+                writer.add_scalars('PSNR Fine', {
+                        'train': psnr,
+                        'validation': psnr_val,
+                    }, global_step)
+
+            # writer.add_scalar('Loss/train', loss, global_step)
+            # writer.add_scalar('Loss/validation', loss_val, global_step)
+            # writer.add_scalar('PSNR/train', psnr, global_step)
+            # writer.add_scalar('PSNR/validation', psnr_val, global_step)
+            # if params.N_importance>0:
+            #     writer.add_scalar("PSNR0/train", psnr0, global_step)
+            #     writer.add_scalar("PSNR0/validation", psnr0_val, global_step)
 
 
 if __name__ == "__main__":
