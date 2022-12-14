@@ -45,20 +45,24 @@ class BatchedRayLoader():
         if sample_mode == 'all':
             self.all_rays = self.preload_all_rays()
             self.current_batch_i = 0
-            self.get_rays_fn = self.rays_from_all
+            # self.get_rays_fn = self.rays_from_all
         else:
             self.all_rays = None # not used if single sampling
             self.current_batch_i = None # not used if single sampling
             self.get_rays_fn = self.rays_from_single
 
-    def get_sample(self):
+    def get_sample(self, sample_size=None, img_i=None):
         """
         samples a random set of rays. sample source depends on if set to
         'all' or 'single'. 
         :return: a tuple batch_rays, target_s of shape (ray_batch_sz, 6) and
         (ray_batch_sz, 3)
         """
-        batch_rays, target_s = self.get_rays_fn()
+
+        if not sample_size:
+            sample_size = self.params.ray_batch_sz
+
+        batch_rays, target_s = self.get_rays_fn(sample_size, img_i)
         # --- TEMP FIX ---
         target_s = target_s.cpu()
         self.i +=1
@@ -84,22 +88,23 @@ class BatchedRayLoader():
         # Move training data to GPU
         rays_rgb = torch.Tensor(rays_rgb).to(device)
         return rays_rgb
-    
-    #TODO: refactor further
-    def rays_from_all(self):
-        ray_batch_sz = self.params.ray_batch_sz
-        # Random over all images
-        batch = self.all_rays[self.current_batch_i:self.current_batch_i+ray_batch_sz] # [B, 2+1, 3*?]
-        batch = torch.transpose(batch, 0, 1)
-        batch_rays, target_s = batch[:2], batch[2]
 
-        self.current_batch_i += ray_batch_sz
-        if self.current_batch_i >= self.all_rays.shape[0]:
-            print("Shuffle data after an epoch!")
-            rand_idx = torch.randperm(self.all_rays.shape[0])
-            self.all_rays = self.all_rays[rand_idx]
-            self.current_batch_i = 0
-        return batch_rays, target_s
+    # not useable
+    # #TODO: refactor further
+    # def rays_from_all(self):
+    #     ray_batch_sz = self.params.ray_batch_sz
+    #     # Random over all images
+    #     batch = self.all_rays[self.current_batch_i:self.current_batch_i+ray_batch_sz] # [B, 2+1, 3*?]
+    #     batch = torch.transpose(batch, 0, 1)
+    #     batch_rays, target_s = batch[:2], batch[2]
+    #
+    #     self.current_batch_i += ray_batch_sz
+    #     if self.current_batch_i >= self.all_rays.shape[0]:
+    #         print("Shuffle data after an epoch!")
+    #         rand_idx = torch.randperm(self.all_rays.shape[0])
+    #         self.all_rays = self.all_rays[rand_idx]
+    #         self.current_batch_i = 0
+    #     return batch_rays, target_s
     
     
     def get_coords(self, use_precrop=False):
@@ -127,9 +132,10 @@ class BatchedRayLoader():
         return coords
 
     
-    def rays_from_single(self):
+    def rays_from_single(self, sample_size, img_i):
         # randomly select one image from training set
-        img_i = np.random.choice(self.i_train)
+        if not img_i:
+            img_i = np.random.choice(self.i_train)
         target_image = self.images[img_i]
         target_image = torch.Tensor(target_image).to(self.device)
         cam_geo = [self.H, self.W]
@@ -141,12 +147,12 @@ class BatchedRayLoader():
         # rays_o, rays_d = get_rays(*cam_geo) # (H,W,3), (H,W,3)
         rays_d, rays_o = generate_rays(*cam_geo)
 
-        use_precrop = self.i < self.params.precrop_iters
+        use_precrop = self.i < self.params.precrop_iters or self.i == -1
         ## 200 * 200 = 40000
         # TODO: REFACTOR
         coords = self.get_coords(use_precrop)
         # choose a random selection of rays of size ray_batch_sz
-        select_inds = np.random.choice(coords.shape[0], size=[self.params.ray_batch_sz], replace=False)  # (ray_batch_sz,)
+        select_inds = np.random.choice(coords.shape[0], size=[sample_size], replace=False)  # (ray_batch_sz,)
         # get those coords
         # select_coords = coords[select_inds].long()  # (ray_batch_sz, 2)
         # select from origin and direction via coords

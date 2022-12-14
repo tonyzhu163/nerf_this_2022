@@ -61,6 +61,8 @@ class ModelParameters:
     # shape:
     white_bkgd: bool = True  # ? True?
     half_res: bool = True  # ? True?
+    
+    use_validation: bool = False
     ## llff flags
     # factor:
     # no_ndc:
@@ -75,6 +77,7 @@ class ModelParameters:
     i_video: int = 5000 # number of epochs per render
     tensorboard: bool = True
     i_tensorboard: int = 100
+    test_weights: bool = True
 
 
 def get_params():
@@ -100,6 +103,11 @@ def get_params():
         "--no_reload",
         action='store_true',
         help="start training from scratch, no restoring weights",
+    )
+    parser.add_argument(
+        "--use_validation",
+        action='store_true',
+        help="run train loop with validation test",
     )
     args = parser.parse_args()
     params = ModelParameters(datadir=["data", "nerf_synthetic"], savedir=["logs"], **vars(args))

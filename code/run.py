@@ -18,8 +18,7 @@ from model import create_nerf
 from batching import BatchedRayLoader
 from validate import validate
 from get_device import device
-
-
+from testing import test_weights
 
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
@@ -39,18 +38,15 @@ def update_lr(params, optimizer, global_step):
 def main():
     params = get_params()
 
-    # #####testing purpose#######
-    # params.i_weights = 500
-    # params.epochs = 50000
-    # # params.i_video = 2000
-    # params.i_print = 100
-    # # params.render_factor = 0
-    # # params.i_weights = 500
-    # # params.epochs = 2001
-    # # params.i_video = 2000
-    # # params.render_factor = 4
-    # # params.render_only = True
-    # params.use_batching = False
+    #####testing purpose#######
+    params.i_weights = 1000
+    params.epochs = 50000
+    # params.i_video = 2000
+    params.i_print = 100
+    params.render_factor = 1
+    # params.render_only = True
+    params.use_batching = False
+    # params.no_reload = True
 
     ###########################
 
@@ -90,7 +86,8 @@ def main():
     # batches and creates rays from poses
     sample_mode = 'all' if params.use_batching else 'single'
     dataloader = BatchedRayLoader(images, poses, i_train, H, W, K, device, params, sample_mode, start = start)
-    dataloader_val = BatchedRayLoader(images, poses, i_val, H, W, K, device, params, sample_mode, start = start)
+    if params.use_validation:
+        dataloader_val = BatchedRayLoader(images, poses, i_val, H, W, K, device, params, sample_mode, start = start)
     coarse_fine = "coarse" if params.N_importance<=0 else "fine"
 
     time = "{:%Y_%m_%d_%H_%M_%S}".format(datetime.datetime.now())
@@ -101,10 +98,12 @@ def main():
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #
         
         rays, target_rgb = dataloader.get_sample()
-        rays_val, target_rgb_val = dataloader_val.get_sample()
-        loss_val, psnr_val, psnr0_val = validate(
-            H, W, K, params.ray_chunk_sz, rays_val, target_rgb_val, device, **render_kwargs_train
-            )
+        
+        if params.use_validation:
+            rays_val, target_rgb_val = dataloader_val.get_sample()
+            loss_val, psnr_val, psnr0_val = validate(
+                H, W, K, params.ray_chunk_sz, rays_val, target_rgb_val, device, **render_kwargs_train
+                )
         
         #TODO: could probably clean up the function call parameters
         render_outputs, extras = render(
@@ -182,46 +181,62 @@ def main():
         if global_step % params.i_print == 0:
             if params.N_importance>0:
                 tqdm.write(
-                    f"""[TRAIN] Iter: {global_step} Loss: {loss.item()}  Fine PSNR: {psnr.item()} Coarse PSNR: {psnr0.item()};
-                    Loss_val: {loss_val.item()}  Fine PSNR_val: {psnr_val.item()} Coarse PSNR_val: {psnr0_val.item()}
-                    """ 
+                    f"""[TRAIN] Iter: {global_step} Loss: {loss.item()}  Fine PSNR: {psnr.item()} Coase PSNR: {psnr0.item()};
+                    
+                    """
+                    # Loss_val: {loss_val.item()}  Fine PSNR_val: {psnr_val.item()} Coase PSNR_val: {psnr0_val.item()}
                 )
             else:
                 tqdm.write(
-                    f"""[TRAIN] Iter: {global_step} Loss: {loss.item()} Coarse PSNR: {psnr0.item()};
-                    Loss_val: {loss_val.item()}  Coarse PSNR_val: {psnr0_val.item()}
-                    """ 
+                    f"""[TRAIN] Iter: {global_step} Loss: {loss.item()} Coase PSNR: {psnr0.item()};
+                    
+                    """
+                    # Loss_val: {loss_val.item()}  Coase PSNR_val: {psnr0_val.item()}
                 )
 
         # --- DRAW ---
-
+            
         if params.tensorboard and global_step % params.i_tensorboard == 0:
-            writer.add_scalars('Loss', {
-                    'train': loss,
-                    'validation': loss_val,
-                }, global_step)
-            if params.N_importance==0:
-                writer.add_scalars('PSNR Coarse', {
-                        'train': psnr,
-                        'validation': psnr_val,
+            if params.use_validation:
+                writer.add_scalars('Loss', {
+                        'train': loss,
+                        'validation': loss_val,
                     }, global_step)
+                if params.N_importance==0:
+                    writer.add_scalars('PSNR Coarse', {
+                            'train': psnr,
+                            'validation': psnr_val,
+                        }, global_step)
+                else:
+                    writer.add_scalars('PSNR Coarse', {
+                            'train': psnr0,
+                            'validation': psnr0_val,
+                        }, global_step)
+                    writer.add_scalars('PSNR Fine', {
+                            'train': psnr,
+                            'validation': psnr_val,
+                        }, global_step)
             else:
-                writer.add_scalars('PSNR Coarse', {
-                        'train': psnr0,
-                        'validation': psnr0_val,
-                    }, global_step)
-                writer.add_scalars('PSNR Fine', {
-                        'train': psnr,
-                        'validation': psnr_val,
-                    }, global_step)
+                writer.add_scalar('Loss/train', loss, global_step)
+                # writer.add_scalar('Loss/test', np.random.random(), global_step)
+                writer.add_scalar('PSNR/train', psnr, global_step)
+                # writer.add_scalar('PSNR/test', np.random.random(), global_step)
+                if params.N_importance>0:
+                    writer.add_scalar("PSNR0/train", psnr0, global_step)
+        
+        if global_step == 1 and params.test_weights:
+            weights_path = Path.cwd().parent / 'logs' / 'weights' / 'fine' / 'single' / 'chair'
+            print('loading_weights')
+            test_loader = BatchedRayLoader(images, poses, i_test, H, W, K, device, params, sample_mode='single',
+                                           start=-1)
 
-            # writer.add_scalar('Loss/train', loss, global_step)
-            # writer.add_scalar('Loss/validation', loss_val, global_step)
-            # writer.add_scalar('PSNR/train', psnr, global_step)
-            # writer.add_scalar('PSNR/validation', psnr_val, global_step)
-            # if params.N_importance>0:
-            #     writer.add_scalar("PSNR0/train", psnr0, global_step)
-            #     writer.add_scalar("PSNR0/validation", psnr0_val, global_step)
+            weights_dict = test_weights(optimizer=optimizer, device=device, test_loader=test_loader, H=H, W=W, K=K, ray_chunk_sz=params.ray_chunk_sz,
+                                        weights_path=weights_path,
+                                        test_size=1024, n=0, i_test=i_test, **render_kwargs_test)
+
+            for idx, i in enumerate(weights_dict['epoch']):
+                writer.add_scalar('Loss/test', weights_dict['loss'][idx], i)
+                writer.add_scalar('PSNR/test', weights_dict['psnr'][idx], i)
 
 
 if __name__ == "__main__":
