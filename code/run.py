@@ -41,7 +41,7 @@ def main():
     params = get_params()
 
     #####testing purpose#######
-    params.object = "chair"
+    params.object = "ficus"
     params.i_weights = 1000
     params.epochs = 150000
     # params.i_video = 2000
@@ -98,7 +98,7 @@ def main():
     tb_path = Path.cwd().parent / 'logs' / 'tensorboard' / time
     writer = SummaryWriter(log_dir=f'{tb_path}')
 
-    if  params.test_weights:
+    if params.test_weights:
         with torch.no_grad():
             weights_path = Path.cwd().parent / 'logs' / 'weights' / 'fine' / 'single' / params.object
             print('loading_weights')

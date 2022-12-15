@@ -15,9 +15,14 @@ from render import render
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
 
-def test_weights(writer, test_size, n, weights_path, test_loader: BatchedRayLoader, \
-                 ray_chunk_sz, device, H, W, K, i_test, network_fn, network_fine=None,test_all = True,  \
+
+def test_weights(writer, test_size, n:int, weights_path, test_loader: BatchedRayLoader,
+                 ray_chunk_sz, device, H, W, K, i_test, network_fn: NeRF, network_fine: NeRF, test_all=True,
+                 ignore_before: int = 0,
                  **render_kwargs):
+
+    assert network_fine and network_fn is not None
+
     weights = []
     ret = {}
     epochs = []
@@ -33,6 +38,10 @@ def test_weights(writer, test_size, n, weights_path, test_loader: BatchedRayLoad
 
     for w in tqdm(weights):
         epoch = int(w.stem)
+
+        if epoch < ignore_before:
+            continue
+
         epochs.append(epoch)
 
         ckpt = torch.load(w)
