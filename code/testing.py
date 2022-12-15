@@ -46,7 +46,7 @@ def test_weights(writer, test_size, n:int, weights_path, test_loader: BatchedRay
 
         epochs.append(epoch)
 
-        ckpt = torch.load(w)
+        ckpt = torch.load(w, map_location=device)
 
         # Load model
         network_fn.load_state_dict(ckpt['network_fn_state_dict'])

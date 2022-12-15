@@ -91,7 +91,6 @@ def load_blender_data(basedir, white_bkgd, half_res=False, testskip=1):
             imgs_half_res[i] = cv2.resize(img, (W, H), interpolation=cv2.INTER_AREA)
         imgs = imgs_half_res
     
-    #TODO: refactor
     if white_bkgd:
         imgs = imgs[...,:3]*imgs[...,-1:] + (1.-imgs[...,-1:])
     else:

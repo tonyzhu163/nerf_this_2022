@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 
 class FreqEncoder(nn.Module):
-    def __init__(self, max_freq=9, num_freqs=10, d=3): #TEMP
+    def __init__(self, max_freq=9, num_freqs=10, d=3):
         super(FreqEncoder, self).__init__()
         periodics = [torch.sin, torch.cos]
         freq_bands = 2.**torch.linspace(0., max_freq, steps=num_freqs)

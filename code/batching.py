@@ -12,12 +12,11 @@ from get_device import device
 #                             Ray Helper Functions                             #
 # ---------------------------------------------------------------------------- #
 
-#TODO: REFACTOR
 def get_rays_np(H, W, K, c2w):
     i, j = np.meshgrid(np.arange(W, dtype=np.float32), np.arange(H, dtype=np.float32), indexing='xy')
     dirs = np.stack([(i-K[0][2])/K[0][0], -(j-K[1][2])/K[1][1], -np.ones_like(i)], -1)
     # Rotate ray directions from camera frame to the world frame
-    rays_d = np.sum(dirs[..., np.newaxis, :] * c2w[:3,:3], -1)  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
+    rays_d = np.sum(dirs[..., np.newaxis, :] * c2w[:3,:3], -1)
     # Translate camera frame's origin to the world frame. It is the origin of all rays.
     rays_o = np.broadcast_to(c2w[:3,-1], np.shape(rays_d))
     return rays_o, rays_d
@@ -43,11 +42,7 @@ class BatchedRayLoader():
         self.params = params
         self.enable_precrop = enable_precrop
         assert sample_mode in ['all', 'single']
-        if sample_mode == 'all':
-            self.all_rays = self.preload_all_rays()
-            self.current_batch_i = 0
-            # self.get_rays_fn = self.rays_from_all
-        else:
+        if sample_mode == 'single':
             self.all_rays = None # not used if single sampling
             self.current_batch_i = None # not used if single sampling
             self.get_rays_fn = self.rays_from_single
@@ -68,9 +63,7 @@ class BatchedRayLoader():
         target_s = target_s.cpu()
         self.i +=1
         return batch_rays, target_s
-        
-    #TODO: implement
-    
+            
     def preload_all_rays(self):
         # For random ray batching
         print('get rays')
@@ -126,32 +119,20 @@ class BatchedRayLoader():
         cam_geo += [torch.Tensor(self.K).to(self.device)]
         cam_geo += [torch.Tensor(self.poses[img_i, :3, :4]).to(self.device)]
         
-        # if self.params.ray_batch_sz: #? why
-        # get rays origin and direction from images
-        # rays_o, rays_d = get_rays(*cam_geo) # (H,W,3), (H,W,3)
         rays_d, rays_o = generate_rays(*cam_geo)
 
-        ## 200 * 200 = 40000
-        # TODO: REFACTOR
         coords = self.get_coords()
-        # choose a random selection of rays of size ray_batch_sz
+        
+        # sampling a selection of rays from the image
         select_inds = np.random.choice(coords.shape[0], size=[sample_size], replace=False)  # (ray_batch_sz,)
-        # get those coords
-        # select_coords = coords[select_inds].long()  # (ray_batch_sz, 2)
-        # select from origin and direction via coords
 
         sel_c = coords[select_inds, :].long()
         sel_c_flat = torch.Tensor([x*self.W + y for x, y in sel_c]).long()
 
-        # --- RAYS ARE FLAT, IMAGES ARE 2D + Channel ---
         rays_o = rays_o[sel_c_flat, :]  # (ray_batch_sz, 3)
         rays_d = rays_d[sel_c_flat, :]  # (ray_batch_sz, 3)
 
-        # stack origin and direction together
-
-        # --- IMPORTANT, D BEFORE O ---
         batch_rays = torch.stack([rays_d, rays_o], 0)
-        # target rgb color
         target_s = target_image[sel_c[:, 0], sel_c[:, 1]]  # (ray_batch_sz, 3)
         return batch_rays, target_s
         

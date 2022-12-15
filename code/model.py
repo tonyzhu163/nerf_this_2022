@@ -168,7 +168,6 @@ def create_nerf(args, device):
     
     start = 0
     
-    #TEMP: add these back when implemented properly (also add to params)
     savedir = args.savedir
     object = args.object
     

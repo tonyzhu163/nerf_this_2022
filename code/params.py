@@ -13,7 +13,7 @@ class ModelParameters:
     datadir: list[str]
     object: str
     savedir: list[str]
-    epochs: int = 50000
+    epochs: int = 100000
     # pixel_nerf 500 -> 5 min aim for 10000 for now
 
     netdepth: int = 8
@@ -39,7 +39,7 @@ class ModelParameters:
     # * N_samples is number of coarse samples per ray
     N_samples: int = 64
     # * N_importance if >= 1, increases the number of bins in the fine sample (only called on the fine NERF once)
-    N_importance: int = 128 #TEMP, change this to 1 when coarse is working
+    N_importance: int = 128
     perturb: float = 1.0
     # use_viewdirs: I think we assume this is always positive
     #* set 1 for hashed embedding, 0 for default positional encoding, 2 for spherical
@@ -62,6 +62,7 @@ class ModelParameters:
     white_bkgd: bool = True  # ? True?
     half_res: bool = True  # ? True?
     
+    test_weights: bool = False
     use_validation: bool = False
     ## llff flags
     # factor:
@@ -77,7 +78,6 @@ class ModelParameters:
     i_video: int = 5000 # number of epochs per render
     tensorboard: bool = True
     i_tensorboard: int = 100
-    test_weights: bool = False
 
 
 def get_params():
@@ -108,6 +108,11 @@ def get_params():
         "--use_validation",
         action='store_true',
         help="run train loop with validation test",
+    )
+    parser.add_argument(
+        "--test_weights",
+        action='store_true',
+        help="only test weights"
     )
     args = parser.parse_args()
     params = ModelParameters(datadir=["data", "nerf_synthetic"], savedir=["logs"], **vars(args))

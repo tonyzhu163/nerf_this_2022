@@ -46,7 +46,6 @@ def render(H, W, K, ray_chunk_sz, rays, device, near, far, **kwargs):
     return output, extra
 
 
-#TODO: remove ray_batch_sz if not used
 def render_ray(rays, N_samples, device,
                 network_fn, network_fine=None,
                N_importance=0, perturb=0, raw_noise_std =0., white_bkgd=False, **kwargs):
