@@ -20,6 +20,9 @@ For reference:
 - M1 Ultra with 64gbs of RAM (lego): 16 hrs
 - RTX3060 (ship): 14 hrs
 
+## Results
+- [Google Drive](https://drive.google.com/drive/folders/19VngwjdyA_Q5l2s-D8mha2ZMw6w8XV_c?usp=share_link)
+- includes render output videos, weight checkpoints for selected objects.
 
 ## Based On 
 1. https://github.com/bmild/nerf
