@@ -20,6 +20,8 @@ from validate import validate
 from get_device import device
 from testing import test_weights
 
+import matplotlib.pyplot as plt
+
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
 
@@ -103,14 +105,21 @@ def main():
             test_loader = BatchedRayLoader(images, poses, i_test, H, W, K, device, params, sample_mode='single',
                                             start=0,enable_precrop=False)
 
-            weights_dict = test_weights(test_size=1024, n=0, weights_path=weights_path, test_loader=test_loader,
+            weights_dict = test_weights(writer=writer,test_size=1024, n=0, weights_path=weights_path, test_loader=test_loader,
                                         ray_chunk_sz=params.ray_chunk_sz, device=device,  H=H, W=W, K=K,           
                                         i_test=i_test, test_all=True, **render_kwargs_test)
 
-            for idx, i in enumerate(weights_dict['epoch']):
-                writer.add_scalar('Loss/test', weights_dict['loss'][idx].item(), i)
-                writer.add_scalar('PSNR/test', weights_dict['psnr'][idx].item(), i)
-            return 
+            plt.plot(weights_dict['epoch'],weights_dict['loss'])
+            plt.xlabel('global step')
+            plt.ylabel('loss')
+            plt.title(params.object)
+            plt.show()
+            plt.plot(weights_dict['epoch'],weights_dict['psnr'])
+            plt.xlabel('global step')
+            plt.ylabel('psnr')
+            plt.title(params.object)
+            plt.show()
+            return
 
     for global_step in trange(start + 1, params.epochs + 1):
         # ---- Forward Pass (Sampling, MLP, Volumetric Rendering) ------------ #            

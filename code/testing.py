@@ -15,7 +15,7 @@ from render import render
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10.0 * torch.log(x) / torch.log(torch.Tensor([10.0]))
 
-def test_weights(test_size, n, weights_path, test_loader: BatchedRayLoader, \
+def test_weights(writer, test_size, n, weights_path, test_loader: BatchedRayLoader, \
                  ray_chunk_sz, device, H, W, K, i_test, network_fn, network_fine=None,test_all = True,  \
                  **render_kwargs):
     weights = []
@@ -71,10 +71,13 @@ def test_weights(test_size, n, weights_path, test_loader: BatchedRayLoader, \
 
             loss_avg.append(loss)
             loss_0.append(loss0)
-
-        loss_lst.append(torch.mean(torch.Tensor(loss_avg)))
-        psnr_lst.append(mse2psnr(torch.mean(torch.Tensor(loss_1))))
-        psnr0_lst.append(mse2psnr(torch.mean(torch.Tensor(loss_0))))
+        loss_write = torch.mean(torch.Tensor(loss_avg)).item()
+        loss_lst.append(loss_write)
+        psnr_write = mse2psnr(torch.mean(torch.Tensor(loss_1))).item()
+        psnr_lst.append(psnr_write)
+        psnr0_lst.append(mse2psnr(torch.mean(torch.Tensor(loss_0))).item())
+        writer.add_scalar('Loss/test', loss_write, epoch)
+        writer.add_scalar('PSNR/test', psnr_write, epoch)
 
     ret['loss'] = loss_lst
     ret['psnr'] = psnr_lst
