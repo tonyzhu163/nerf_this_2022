@@ -32,6 +32,8 @@ def test_weights(writer, test_size, n:int, weights_path, test_loader: BatchedRay
     for x in p.rglob('*.tar'):
         weights.append(x)
 
+    weights = sorted(weights, reverse=False)
+
     loss_lst = []
     psnr_lst = []
     psnr0_lst = []
