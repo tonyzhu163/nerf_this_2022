@@ -1,8 +1,25 @@
 # nerf_this_2022
 
-## Contents
-vanilla nerf implementation in pytorch
-- instant ngp hashing (WIP)
+This is our PyTorch implementation of the [Neural Radiance Fields Paper](https://arxiv.org/pdf/2003.08934.pdf)  
+
+## Training from Scratch
+```bash
+cd code
+python run.py --object [objectname] --no_reload
+```
+
+## Rendering from Weights
+```bash
+cd code
+python run.py --object [objectname] --render_only
+```
+
+Training on a single image may take upwards of 20 hours depending on hardware.
+
+For reference:
+- M1 Ultra with 64gbs of RAM (lego): 16 hrs
+- RTX3060 (ship): 14 hrs
+
 
 ## Based On 
 1. https://github.com/bmild/nerf

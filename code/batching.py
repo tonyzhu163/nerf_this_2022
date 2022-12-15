@@ -90,23 +90,6 @@ class BatchedRayLoader():
         rays_rgb = torch.Tensor(rays_rgb).to(device)
         return rays_rgb
 
-    # not useable
-    # #TODO: refactor further
-    # def rays_from_all(self):
-    #     ray_batch_sz = self.params.ray_batch_sz
-    #     # Random over all images
-    #     batch = self.all_rays[self.current_batch_i:self.current_batch_i+ray_batch_sz] # [B, 2+1, 3*?]
-    #     batch = torch.transpose(batch, 0, 1)
-    #     batch_rays, target_s = batch[:2], batch[2]
-    #
-    #     self.current_batch_i += ray_batch_sz
-    #     if self.current_batch_i >= self.all_rays.shape[0]:
-    #         print("Shuffle data after an epoch!")
-    #         rand_idx = torch.randperm(self.all_rays.shape[0])
-    #         self.all_rays = self.all_rays[rand_idx]
-    #         self.current_batch_i = 0
-    #     return batch_rays, target_s
-    
     
     def get_coords(self):
         H, W = self.H, self.W
