@@ -1,0 +1,21 @@
+\begin{thebibliography}{1}
+
+\bibitem{nerf}
+Ben Mildenhall, Pratul~P. Srinivasan, Matthew Tancik, Jonathan~T. Barron, Ravi
+  Ramamoorthi, and Ren Ng.
+\newblock Nerf: Representing scenes as neural radiance fields for view
+  synthesis, 2020.
+
+\bibitem{ingp}
+Thomas M\"uller, Alex Evans, Christoph Schied, and Alexander Keller.
+\newblock Instant neural graphics primitives with a multiresolution hash
+  encoding.
+\newblock {\em ACM Trans. Graph.}, 41(4):102:1--102:15, July 2022.
+
+\bibitem{pleno}
+Alex Yu, Sara Fridovich{-}Keil, Matthew Tancik, Qinhong Chen, Benjamin Recht,
+  and Angjoo Kanazawa.
+\newblock Plenoxels: Radiance fields without neural networks.
+\newblock {\em CoRR}, abs/2112.05131, 2021.
+
+\end{thebibliography}
