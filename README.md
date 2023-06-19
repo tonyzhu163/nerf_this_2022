@@ -1,6 +1,11 @@
 # nerf_this_2022
 
-This is our PyTorch implementation of the [Neural Radiance Fields Paper](https://arxiv.org/pdf/2003.08934.pdf)  
+This is our PyTorch implementation of the [Neural Radiance Fields Paper](https://arxiv.org/pdf/2003.08934.pdf)
+
+## Links
+- [Project Report](https://github.com/tonyzhu163/nerf_this_2022/blob/main/report/report.pdf)
+- [Conference Poster](https://github.com/tonyzhu163/nerf_this_2022/blob/main/report/poster.pdf)
+
 
 ## Training from Scratch
 ```bash
